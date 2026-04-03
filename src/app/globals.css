@@ -1,26 +1,179 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand palette */
+  --color-ink: #0D1117;
+  --color-surface: #F4F5F7;
+  --color-white: #FFFFFF;
+  --color-accent: #16C784;
+  --color-accent-hover: #13B371;
+  --color-danger: #E24B4A;
+  --color-muted: #6B7280;
+  --color-border: #E5E7EB;
+
+  /* Typography */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+
+  /* Spacing */
+  --section-py: 96px;
+  --section-py-sm: 64px;
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (max-width: 768px) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --section-py: 64px;
+    --section-py-sm: 48px;
   }
 }
 
+/* --- RESET --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- CUSTOM SLIDER --- */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-white);
+  border: 2px solid var(--color-ink);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-white);
+  border: 2px solid var(--color-ink);
+  cursor: pointer;
+}
+
+/* --- RADIX ACCORDION --- */
+@keyframes slideDown {
+  from { height: 0; opacity: 0; }
+  to   { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes slideUp {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to   { height: 0; opacity: 0; }
+}
+
+.animate-slideDown { animation: slideDown 0.25s ease-out; }
+.animate-slideUp   { animation: slideUp 0.2s ease-out; }
+
+/* --- MASONRY COLUMNS --- */
+.masonry-3 {
+  columns: 3;
+  column-gap: 24px;
+}
+.masonry-3 > * {
+  break-inside: avoid;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .masonry-3 { columns: 2; }
+}
+@media (max-width: 640px) {
+  .masonry-3 { columns: 1; }
+}
+
+/* --- MICRO-INTERACTIONS --- */
+
+/* Smooth focus outlines */
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Link underline animation */
+a {
+  position: relative;
+}
+
+/* Section heading accent line pulse */
+@keyframes accentPulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* Subtle shimmer for accent-bg elements */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Industry pill hover lift */
+button {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+button:hover {
+  transform: translateY(-1px);
+}
+button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Smooth image reveals */
+img, video {
+  transition: opacity 0.4s ease;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(13, 17, 23, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 17, 23, 0.3);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(22, 199, 132, 0.25);
+  color: var(--color-ink);
 }
