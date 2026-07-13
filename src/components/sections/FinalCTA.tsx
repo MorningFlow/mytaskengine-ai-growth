@@ -51,7 +51,7 @@ export default function FinalCTA() {
             lineHeight: 1.7,
           }}>
             In 30 minutes, we&apos;ll map out exactly where your business is leaking
-            time and money — and show you the systems that fix it. No jargon.
+            time and money and show you the systems that fix it. No jargon.
             No hard sell. Just clarity.
           </p>
         </RevealOnScroll>
@@ -87,7 +87,7 @@ export default function FinalCTA() {
               e.currentTarget.style.boxShadow = 'none'
             }}
           >
-            Book My Free Audit — It&apos;s 30 Minutes <span>→</span>
+            Book My 30-Minute Free Audit <span>→</span>
           </button>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', marginTop: 16 }}>
             We book a maximum of 8 audits per week. Reserve your slot.

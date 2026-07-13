@@ -5,7 +5,7 @@ const pains = [
   { scenario: 'A lead calls after hours.', consequence: 'They book your competitor by morning.' },
   { scenario: 'A DM comes in at midnight.', consequence: 'You reply at 9am. They\'ve moved on.' },
   { scenario: 'A past client goes cold.', consequence: 'You meant to follow up. Never did.' },
-  { scenario: 'A happy client leaves — no review.', consequence: 'Your next prospect never finds you.' },
+  { scenario: 'A happy client leaves without a review.', consequence: 'Your next prospect never finds you.' },
   { scenario: 'You run ads. Leads come in.', consequence: 'No one follows up fast enough. They die.' },
   { scenario: 'You chase every booking manually.', consequence: '3 hours a day on tasks a bot should handle.' },
 ]
@@ -90,7 +90,7 @@ export default function ProblemSection() {
           <div style={{ marginTop: 48 }}>
             <hr style={{ border: 'none', height: 1, background: 'rgba(255,255,255,0.1)', marginBottom: 20 }} />
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.3)', maxWidth: 640, lineHeight: 1.7 }}>
-              Every unanswered message, every cold lead, every missed review — it compounds.
+              Every unanswered message, every cold lead, and every missed review compounds.
               The Engine Room closes those gaps automatically.
             </p>
           </div>

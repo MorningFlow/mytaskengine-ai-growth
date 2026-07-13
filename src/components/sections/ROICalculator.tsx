@@ -173,7 +173,7 @@ export default function ROICalculator() {
             onMouseEnter={e => (e.currentTarget.style.background = '#1a2030')}
             onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-ink)')}
           >
-            Book My Audit — See the Real Number →
+            Book My Audit and See the Real Number →
           </button>
         </div>
       </div>

@@ -11,6 +11,7 @@ export default function CinematicIntro({ children }: CinematicIntroProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const heroVideoRef = useRef<HTMLVideoElement>(null)
   const transitionTime = 5 // seconds into video to start transition
+  const PLAYBACK_SPEED = 1.75
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current
@@ -28,6 +29,7 @@ export default function CinematicIntro({ children }: CinematicIntroProps) {
   useEffect(() => {
     if (phase === 'transitioning' && videoRef.current && heroVideoRef.current) {
       heroVideoRef.current.currentTime = videoRef.current.currentTime
+      heroVideoRef.current.playbackRate = PLAYBACK_SPEED
       heroVideoRef.current.play().catch(() => {})
     }
   }, [phase])
@@ -36,6 +38,7 @@ export default function CinematicIntro({ children }: CinematicIntroProps) {
   useEffect(() => {
     const video = videoRef.current
     if (video) {
+      video.playbackRate = PLAYBACK_SPEED
       video.play().catch(() => {})
     }
   }, [])
@@ -148,7 +151,7 @@ export default function CinematicIntro({ children }: CinematicIntroProps) {
               <motion.div
                 initial={{ width: '0%' }}
                 animate={{ width: '100%' }}
-                transition={{ duration: transitionTime, ease: 'linear' }}
+                transition={{ duration: transitionTime / PLAYBACK_SPEED, ease: 'linear' }}
                 style={{
                   height: '100%',
                   background: 'var(--color-accent)',

@@ -12,14 +12,14 @@ const steps = [
   {
     number: '02',
     title: 'We Build & Configure Your Systems',
-    body: 'We handle everything — setup, integration, training, and testing. You don\'t need to be technical.',
+    body: 'We handle everything from setup to integration, training, and testing. You don\'t need to be technical.',
     time: '3–7 business days',
   },
   {
     number: '03',
     title: 'Your Business Runs Smarter',
     body: 'Systems go live. Leads get followed up. Bookings come in. Reviews stack up. You get back your time.',
-    time: 'Ongoing — automated',
+    time: 'Ongoing (Automated)',
   },
 ]
 

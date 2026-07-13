@@ -7,20 +7,70 @@ export default function Hero() {
   // phase: 'transitioning' → overlay + text animate in over the same video
   // phase: 'done' → video still visible as bg, everything settled
   const [phase, setPhase] = useState<'intro' | 'transitioning' | 'done'>('intro')
+  const [isMobile, setIsMobile] = useState(false)
+  const [coverScale, setCoverScale] = useState(1)
+  const [isZoomedOut, setIsZoomedOut] = useState(false)
+  const [hasHydrated, setHasHydrated] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const TRANSITION_AT = 5 // seconds
+  const TRANSITION_AT = 5 // seconds of video content
+  const PLAYBACK_SPEED = 1.75
 
   // Autoplay on mount + Skip logic for direct section access
   useEffect(() => {
-    // If landing on a hash (e.g. #faq) or already scrolled, skip the intro
-    const hasHash = window.location.hash
-    const hasScroll = window.scrollY > 20
-    if (hasHash || hasScroll) {
-      setPhase('done')
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768
+      setIsMobile(mobile)
+
+      const containerW = window.innerWidth
+      const containerH = window.innerHeight
+      const videoAspect = 16 / 9
+      const containerAspect = containerW / containerH
+
+      let renderedW, renderedH
+      if (containerAspect > videoAspect) {
+        renderedH = containerH
+        renderedW = containerH * videoAspect
+      } else {
+        renderedW = containerW
+        renderedH = containerW / videoAspect
+      }
+
+      const scale = Math.max(containerW / renderedW, containerH / renderedH)
+      setCoverScale(scale)
+    }
+    handleResize()
+    setHasHydrated(true)
+    window.addEventListener('resize', handleResize)
+    const checkSkip = () => {
+      if (window.scrollY > 20 || window.location.hash) {
+        setPhase(curr => (curr === 'intro' ? 'done' : curr))
+      }
     }
 
-    videoRef.current?.play().catch(() => {})
-  }, [])
+    // Check immediately
+    checkSkip()
+
+    // Browser might restore scroll slightly after mount
+    const t1 = setTimeout(checkSkip, 50)
+    const t2 = setTimeout(checkSkip, 150)
+    const t3 = setTimeout(checkSkip, 300)
+
+    // Listen to scroll events (e.g. from browser scroll restoration)
+    window.addEventListener('scroll', checkSkip, { passive: true })
+
+    if (videoRef.current) {
+      videoRef.current.playbackRate = PLAYBACK_SPEED
+      videoRef.current.play().catch(() => { })
+    }
+
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+      window.removeEventListener('scroll', checkSkip)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [PLAYBACK_SPEED])
 
   // Unlock scroll only after content is visible
   useEffect(() => {
@@ -42,13 +92,19 @@ export default function Hero() {
 
   const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current
-    if (v && v.currentTime >= TRANSITION_AT) startTransition()
-  }, [startTransition])
+    if (v) {
+      if (v.currentTime >= TRANSITION_AT) {
+        startTransition()
+      } else if (v.currentTime >= 1.8 && phase === 'intro') {
+        if (!isZoomedOut) setIsZoomedOut(true)
+      }
+    }
+  }, [startTransition, phase, isZoomedOut])
 
   // Derived animation values
-  const isIntro        = phase === 'intro'
+  const isIntro = phase === 'intro'
   const isTransitioning = phase === 'transitioning'
-  const isDone         = phase === 'done'
+  const isDone = phase === 'done'
   const overlayVisible = isTransitioning || isDone
   const contentVisible = isDone
 
@@ -80,17 +136,29 @@ export default function Hero() {
           zIndex: 0,
         }}
       >
-        <video
+        <motion.video
           ref={videoRef}
           src="/hero-intro.mp4"
           muted
           playsInline
           onTimeUpdate={handleTimeUpdate}
           onEnded={startTransition}
+          initial={{ scale: 1 }}
+          animate={{
+            scale: !hasHydrated
+              ? 1
+              : isMobile
+                ? (overlayVisible ? coverScale : (isZoomedOut ? 1.5 : coverScale))
+                : coverScale
+          }}
+          transition={{
+            duration: (phase === 'intro' && !isZoomedOut) ? 0 : 1.6,
+            ease: [0.22, 1, 0.36, 1]
+          }}
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
+            objectFit: hasHydrated ? 'contain' : 'cover',
             objectPosition: 'center',
             display: 'block',
           }}
@@ -160,34 +228,36 @@ export default function Hero() {
           Skip intro
         </span>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5 3l4 4-4 4" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M10 3v8" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M5 3l4 4-4 4" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M10 3v8" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </motion.button>
 
-      {/* ─── PROGRESS BAR (visible only during intro) ─── */}
+      {/* ─── TOP PROGRESS BAR (visible only during intro) ─── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: isIntro ? 1 : 0 }}
         transition={{ duration: 0.4 }}
         style={{
-          position: 'absolute',
-          bottom: 0,
+          position: 'fixed',
+          top: 0,
           left: 0,
           right: 0,
-          height: 2,
+          height: 3,
+          zIndex: 10000,
           background: 'rgba(255,255,255,0.08)',
-          zIndex: 10,
           pointerEvents: 'none',
         }}
       >
         <motion.div
           initial={{ width: '0%' }}
           animate={{ width: isIntro ? '100%' : '0%' }}
-          transition={{ duration: TRANSITION_AT, ease: 'linear' }}
+          transition={{ duration: TRANSITION_AT / PLAYBACK_SPEED, ease: 'linear' }}
           style={{
             height: '100%',
-            background: 'var(--color-accent)',
+            background: 'linear-gradient(90deg, var(--color-accent), #20E89C)',
+            borderRadius: '0 2px 2px 0',
+            boxShadow: '0 0 12px rgba(22,199,132,0.5), 0 0 4px rgba(22,199,132,0.3)',
           }}
         />
       </motion.div>
@@ -207,107 +277,105 @@ export default function Hero() {
         {/* Text block — left 48% */}
         <div className="hero-text-col" style={{ maxWidth: 560, width: '100%' }}>
 
-        {/* Eyebrow */}
-        <motion.div
-          initial={{ opacity: 0, x: -32, y: 8 }}
-          animate={contentVisible ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -32, y: 8 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 12,
-            color: 'var(--color-accent)',
-            fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            marginBottom: 24,
-          }}
-        >
-          <span style={{ width: 24, height: 1, background: 'var(--color-accent)', display: 'inline-block' }} />
-          AI SYSTEMS FOR GROWTH-FOCUSED BUSINESS OWNERS
-        </motion.div>
-
-        {/* Headline */}
-        <motion.h1
-          initial={{ opacity: 0, x: -48, y: 12 }}
-          animate={contentVisible ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -48, y: 12 }}
-          transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: 0.18 }}
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 800,
-            fontSize: 'clamp(36px, 5.5vw, 68px)',
-            lineHeight: 0.97,
-            letterSpacing: '-0.02em',
-            color: '#fff',
-            marginBottom: 32,
-          }}
-        >
-          Your Business Deserves to Run{' '}
-          <span style={{ color: 'var(--color-accent)' }}>Without You</span>{' '}
-          in the Room.
-        </motion.h1>
-
-        {/* Sub-headline */}
-        <motion.p
-          initial={{ opacity: 0, x: -36, y: 8 }}
-          animate={contentVisible ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -36, y: 8 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.32 }}
-          style={{
-            fontSize: 17,
-            fontWeight: 400,
-            color: 'rgba(255,255,255,0.6)',
-            lineHeight: 1.7,
-            marginBottom: 40,
-          }}
-        >
-          We build AI receptionists, automated lead systems, and high-converting
-          websites that handle the follow-up, the DMs, the bookings, and the
-          busywork — so you can focus on the work only you can do.
-        </motion.p>
-
-        {/* CTA group */}
-        <motion.div
-          initial={{ opacity: 0, x: -28 }}
-          animate={contentVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: -28 }}
-          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.46 }}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}
-        >
-          <button
-            data-cal-link="mytaskengine/30min"
-            data-cal-namespace="30min"
-            data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'
+          {/* Eyebrow */}
+          <motion.div
+            initial={{ opacity: 0, x: -32, y: 8 }}
+            animate={contentVisible ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -32, y: 8 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
-              height: 52,
-              padding: '0 32px',
-              background: 'var(--color-accent)',
-              color: 'var(--color-ink)',
-              fontSize: 15,
-              fontWeight: 600,
-              borderRadius: 12,
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'transform 0.2s ease-out, box-shadow 0.2s',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'scale(1.02)'
-              e.currentTarget.style.boxShadow = '0 0 32px rgba(22,199,132,0.3)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = 'scale(1)'
-              e.currentTarget.style.boxShadow = 'none'
+              gap: 12,
+              color: 'var(--color-accent)',
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              marginBottom: 24,
             }}
           >
-            Book My Free AI Audit <span>→</span>
-          </button>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>
-            Free. No pitch. Just clarity.
-          </p>
-        </motion.div>
+            <span style={{ width: 24, height: 1, background: 'var(--color-accent)', display: 'inline-block' }} />
+            AI SYSTEMS FOR GROWTH-FOCUSED BUSINESS OWNERS
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, x: -48, y: 12 }}
+            animate={contentVisible ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -48, y: 12 }}
+            transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: 0.18 }}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              fontSize: 'clamp(36px, 5.5vw, 68px)',
+              lineHeight: 0.97,
+              letterSpacing: '-0.02em',
+              color: '#fff',
+              marginBottom: 32,
+            }}
+          >
+            Your Business Deserves to Run{' '}
+            <span style={{ color: 'var(--color-accent)' }}>Without You</span>{' '}
+            in the Room.
+          </motion.h1>
+
+          {/* Sub-headline */}
+          <motion.p
+            initial={{ opacity: 0, x: -36, y: 8 }}
+            animate={contentVisible ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -36, y: 8 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.32 }}
+            style={{
+              fontSize: 17,
+              fontWeight: 400,
+              color: 'rgba(255,255,255,0.6)',
+              lineHeight: 1.7,
+              marginBottom: 40,
+            }}
+          >
+            You run the business. The systems run the busywork, from the DMs and bookings to the follow-up and the 5-star reviews that used to slip through the cracks.
+          </motion.p>
+
+          {/* CTA group */}
+          <motion.div
+            initial={{ opacity: 0, x: -28 }}
+            animate={contentVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: -28 }}
+            transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.46 }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}
+          >
+            <button
+              data-cal-link="mytaskengine/30min"
+              data-cal-namespace="30min"
+              data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                height: 52,
+                padding: '0 32px',
+                background: 'var(--color-accent)',
+                color: 'var(--color-ink)',
+                fontSize: 15,
+                fontWeight: 600,
+                borderRadius: 12,
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'transform 0.2s ease-out, box-shadow 0.2s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'scale(1.02)'
+                e.currentTarget.style.boxShadow = '0 0 32px rgba(22,199,132,0.3)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              Book My Free AI Audit <span>→</span>
+            </button>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>
+              Free. No pitch. Just clarity.
+            </p>
+          </motion.div>
         </div>{/* end text column */}
 
         {/* Scroll indicator — outside text column, bottom of outer wrapper */}

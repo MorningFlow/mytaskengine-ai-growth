@@ -68,40 +68,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ─── TOP PROGRESS BAR — visible only during intro ─── */}
-      <AnimatePresence>
-        {isIntro && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 3,
-              zIndex: 10000,
-              background: 'rgba(255,255,255,0.08)',
-              pointerEvents: 'none',
-            }}
-          >
-            <motion.div
-              initial={{ width: '0%' }}
-              animate={{ width: '100%' }}
-              transition={{ duration: 5, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                height: '100%',
-                background: 'linear-gradient(90deg, var(--color-accent), #20E89C)',
-                borderRadius: '0 2px 2px 0',
-                boxShadow: '0 0 12px rgba(22,199,132,0.5), 0 0 4px rgba(22,199,132,0.3)',
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+      {/* ─── TOP PROGRESS BAR — Now handled strictly by Hero.tsx ─── */}
       {/* ─── NAVBAR — hidden during intro, slides in after ─── */}
       <motion.div
         initial={{ y: -80, opacity: 0, scale: 0.96 }}

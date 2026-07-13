@@ -7,8 +7,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mytaskengine.com'),
-  title: 'MyTaskEngine — AI Systems for Growth-Focused Business Owners',
-  description: 'We build AI receptionists, automated lead systems, and high-converting websites that handle the follow-up, bookings, and busywork — so you can focus on the work only you can do.',
+  title: 'MyTaskEngine | AI Systems for Growth-Focused Business Owners',
+  description: 'You run the business. The systems run the busywork, from the DMs and bookings to the follow-up and the 5-star reviews that used to slip through the cracks.',
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: 'MyTaskEngine — The Engine Room',
+    title: 'MyTaskEngine | The Engine Room',
     description: 'Your AI-powered business automation partner.',
     url: 'https://mytaskengine.com',
     siteName: 'MyTaskEngine',
