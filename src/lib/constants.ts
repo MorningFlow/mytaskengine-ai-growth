@@ -22,24 +22,27 @@ export const services = [
     hook: 'Sorts real buyers from noise, nurtures warm leads, and books calls inside your DMs.',
     for: 'Brands overwhelmed by Instagram or WhatsApp messages.',
     category: 'ai',
+    demoUrl: 'https://ig.me/m/mytaskengine',
+    demoLabel: 'Try the live demo on Instagram',
   },
   {
-    name: 'High-Converting Websites',
-    hook: 'Modern, fast sites built to turn visitors into enquiries in just days.',
-    for: 'Businesses whose website embarrasses the quality of their actual service.',
-    category: 'growth',
+    name: 'Web Applications & Websites',
+    hook: 'Scalable web platforms, custom dashboards, and business websites built to perform.',
+    for: 'Businesses that need a serious digital presence or a custom-built platform.',
+    category: 'build',
+    siteLinks: [
+      { name: 'Sample', url: 'https://telos-website-two.vercel.app/' },
+    ],
   },
   {
-    name: 'Outbound Growth Engine',
-    hook: 'A systemized cold outreach machine that fills your calendar with qualified meetings.',
-    for: 'B2B founders ready to grow outbound without adding headcount.',
-    category: 'growth',
-  },
-  {
-    name: 'Inbound Demand Engine',
-    hook: 'Turns paid visibility into a consistent inbound pipeline through creative testing.',
-    for: 'Businesses ready to move beyond referrals and build reliable lead flow.',
-    category: 'growth',
+    name: 'Mobile Applications',
+    hook: 'Mobile-first products designed for engagement, retention, and real-world utility.',
+    for: 'Founders and businesses building consumer apps or internal mobile tools.',
+    category: 'build',
+    playStoreLinks: [
+      { name: 'Telos', url: 'https://play.google.com/store/apps/details?id=com.alrawi.telos' },
+      { name: 'Entheos', url: 'https://play.google.com/store/apps/details?id=com.alrawi.entheos' },
+    ],
   },
 ]
 

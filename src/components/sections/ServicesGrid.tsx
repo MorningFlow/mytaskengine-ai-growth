@@ -3,9 +3,11 @@ import RevealOnScroll from '@/components/ui/RevealOnScroll'
 import GlowCard from '@/components/ui/GlowCard'
 import { services } from '@/lib/constants'
 
+type Service = (typeof services)[number]
+
 export default function ServicesGrid() {
   const aiServices = services.filter(s => s.category === 'ai')
-  const growthServices = services.filter(s => s.category === 'growth')
+  const buildServices = services.filter(s => s.category === 'build')
 
   return (
     <section id="services" style={{
@@ -59,53 +61,88 @@ export default function ServicesGrid() {
           gap: 24,
           marginBottom: 48,
         }} className="services-grid-2">
-          {aiServices.map((s, i) => (
-            <RevealOnScroll key={s.name} delay={i * 0.07}>
-              <GlowCard
-                style={{
-                  background: 'var(--color-white)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <div style={{ padding: 28 }}>
-                  <h3 style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 600,
-                    fontSize: 18,
-                    color: 'var(--color-ink)',
-                    marginBottom: 10,
-                  }}>
-                    {s.name}
-                  </h3>
-                  <p style={{ fontSize: 14, color: 'rgba(13,17,23,0.8)', lineHeight: 1.6, marginBottom: 16 }}>
-                    {s.hook}
-                  </p>
-                  <p style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: 8,
-                    fontSize: 12,
-                    color: 'var(--color-muted)',
-                  }}>
-                    <span style={{
-                      display: 'inline-block',
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      background: 'var(--color-accent)',
-                      flexShrink: 0,
-                      position: 'relative',
-                      top: -1,
-                    }} />
-                    {s.for}
-                  </p>
-                </div>
-              </GlowCard>
-            </RevealOnScroll>
-          ))}
+          {aiServices.map((s, i) => {
+            const svc = s as Service & { demoUrl?: string; demoLabel?: string }
+            return (
+              <RevealOnScroll key={s.name} delay={i * 0.07}>
+                <GlowCard
+                  style={{
+                    background: 'var(--color-white)',
+                    border: '1px solid var(--color-border)',
+                    height: '100%',
+                  }}
+                >
+                  <div style={{ padding: 28, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <h3 style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 600,
+                      fontSize: 18,
+                      color: 'var(--color-ink)',
+                      marginBottom: 10,
+                    }}>
+                      {s.name}
+                    </h3>
+                    <p style={{ fontSize: 14, color: 'rgba(13,17,23,0.8)', lineHeight: 1.6, marginBottom: 16 }}>
+                      {s.hook}
+                    </p>
+                    <p style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 8,
+                      fontSize: 12,
+                      color: 'var(--color-muted)',
+                      marginBottom: svc.demoUrl ? 20 : 0,
+                    }}>
+                      <span style={{
+                        display: 'inline-block',
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: 'var(--color-accent)',
+                        flexShrink: 0,
+                        position: 'relative',
+                        top: -1,
+                      }} />
+                      {s.for}
+                    </p>
+
+                    {svc.demoUrl && (
+                      <a
+                        href={svc.demoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          marginTop: 'auto',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: 'var(--color-accent)',
+                          textDecoration: 'none',
+                          letterSpacing: '0.03em',
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                        </svg>
+                        {svc.demoLabel ?? 'Try the demo'}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                </GlowCard>
+              </RevealOnScroll>
+            )
+          })}
         </div>
 
-        {/* Growth Infrastructure */}
+        {/* Digital Products */}
         <p style={{
           fontSize: 11,
           fontWeight: 500,
@@ -114,63 +151,156 @@ export default function ServicesGrid() {
           color: 'var(--color-muted)',
           marginBottom: 20,
         }}>
-          GROWTH INFRASTRUCTURE
+          DIGITAL PRODUCTS
         </p>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: 'repeat(2, 1fr)',
           gap: 24,
-        }} className="services-grid-3">
-          {growthServices.map((s, i) => (
-            <RevealOnScroll key={s.name} delay={i * 0.07}>
-              <GlowCard
-                style={{
-                  background: 'var(--color-white)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <div style={{ padding: 28 }}>
-                  <h3 style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 600,
-                    fontSize: 18,
-                    color: 'var(--color-ink)',
-                    marginBottom: 10,
-                  }}>
-                    {s.name}
-                  </h3>
-                  <p style={{ fontSize: 14, color: 'rgba(13,17,23,0.8)', lineHeight: 1.6, marginBottom: 16 }}>
-                    {s.hook}
-                  </p>
-                  <p style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: 8,
-                    fontSize: 12,
-                    color: 'var(--color-muted)',
-                  }}>
-                    <span style={{
-                      display: 'inline-block',
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      background: 'var(--color-accent)',
-                      flexShrink: 0,
-                      position: 'relative',
-                      top: -1,
-                    }} />
-                    {s.for}
-                  </p>
-                </div>
-              </GlowCard>
-            </RevealOnScroll>
-          ))}
+        }} className="services-grid-2">
+          {buildServices.map((s, i) => {
+            const svc = s as Service & {
+              playStoreLinks?: { name: string; url: string }[]
+              siteLinks?: { name: string; url: string }[]
+            }
+            return (
+              <RevealOnScroll key={s.name} delay={i * 0.07}>
+                <GlowCard
+                  style={{
+                    background: 'var(--color-white)',
+                    border: '1px solid var(--color-border)',
+                    height: '100%',
+                  }}
+                >
+                  <div style={{ padding: 28, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <h3 style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 600,
+                      fontSize: 18,
+                      color: 'var(--color-ink)',
+                      marginBottom: 10,
+                    }}>
+                      {s.name}
+                    </h3>
+                    <p style={{ fontSize: 14, color: 'rgba(13,17,23,0.8)', lineHeight: 1.6, marginBottom: 16 }}>
+                      {s.hook}
+                    </p>
+                    <p style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 8,
+                      fontSize: 12,
+                      color: 'var(--color-muted)',
+                    }}>
+                      <span style={{
+                        display: 'inline-block',
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: 'var(--color-accent)',
+                        flexShrink: 0,
+                        position: 'relative',
+                        top: -1,
+                      }} />
+                      {s.for}
+                    </p>
+
+                    {/* Sample website links */}
+                    {svc.siteLinks && svc.siteLinks.length > 0 && (
+                      <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                        {svc.siteLinks.map(site => (
+                          <a
+                            key={site.name}
+                            href={site.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 7,
+                              padding: '6px 14px',
+                              borderRadius: 6,
+                              border: '1px solid var(--color-border)',
+                              background: 'var(--color-surface)',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: 'var(--color-ink)',
+                              textDecoration: 'none',
+                              transition: 'border-color 0.2s, color 0.2s',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.borderColor = 'var(--color-accent)'
+                              e.currentTarget.style.color = 'var(--color-accent)'
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.borderColor = 'var(--color-border)'
+                              e.currentTarget.style.color = 'var(--color-ink)'
+                            }}
+                          >
+                            {/* Globe icon */}
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"/>
+                              <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                            {site.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Play Store badges */}
+                    {svc.playStoreLinks && svc.playStoreLinks.length > 0 && (
+                      <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                        {svc.playStoreLinks.map(app => (
+                          <a
+                            key={app.name}
+                            href={app.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 7,
+                              padding: '6px 14px',
+                              borderRadius: 6,
+                              border: '1px solid var(--color-border)',
+                              background: 'var(--color-surface)',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: 'var(--color-ink)',
+                              textDecoration: 'none',
+                              transition: 'border-color 0.2s, color 0.2s',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.borderColor = 'var(--color-accent)'
+                              e.currentTarget.style.color = 'var(--color-accent)'
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.borderColor = 'var(--color-border)'
+                              e.currentTarget.style.color = 'var(--color-ink)'
+                            }}
+                          >
+                            {/* Google Play icon */}
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M3.18 23.76c.37.21.8.22 1.19.02l12.09-6.97-2.89-2.89-10.39 9.84zm-1.01-20.1A1.64 1.64 0 0 0 2 4.58v14.84c0 .47.18.92.51 1.25l.07.07 8.31-8.31v-.19L2.17 3.66zm18.35 7.88-2.94-1.7-3.23 3.23 3.23 3.23 2.96-1.71a1.66 1.66 0 0 0 0-3.05zM4.37.22 16.46 7.2l-2.9 2.89L3.18.26A1.32 1.32 0 0 1 4.37.22z"/>
+                            </svg>
+                            {app.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </GlowCard>
+              </RevealOnScroll>
+            )
+          })}
         </div>
       </div>
       <style>{`
         @media (max-width: 768px) {
           .services-grid-2 { grid-template-columns: 1fr !important; }
-          .services-grid-3 { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </section>
