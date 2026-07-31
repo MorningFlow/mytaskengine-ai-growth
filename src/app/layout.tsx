@@ -3,6 +3,7 @@ import { bricolage, jakarta } from './fonts'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CalEmbed from '@/components/ui/CalEmbed'
+import { FloatingAiAssistant } from '@/components/ui/glowing-ai-chat-assistant'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Navbar />
         {children}
         <Footer />
+        <FloatingAiAssistant />
       </body>
     </html>
   )
