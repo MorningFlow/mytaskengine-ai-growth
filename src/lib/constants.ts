@@ -4,6 +4,8 @@ export const services = [
     hook: 'Handles your calls, qualifies leads, and books appointments while you sleep.',
     for: 'Service businesses losing clients to unanswered phones.',
     category: 'ai',
+    demoType: 'voice-receptionist' as const,
+    demoLabel: 'Talk to Aria',
   },
   {
     name: 'Lead Revival Agent',
@@ -23,7 +25,7 @@ export const services = [
     for: 'Brands overwhelmed by Instagram or WhatsApp messages.',
     category: 'ai',
     demoUrl: 'https://ig.me/m/mytaskengine',
-    demoLabel: 'Try the live demo on Instagram',
+    demoLabel: 'Try it on Instagram',
   },
   {
     name: 'Web Applications & Websites',

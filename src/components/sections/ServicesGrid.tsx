@@ -1,11 +1,21 @@
 'use client'
+import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import RevealOnScroll from '@/components/ui/RevealOnScroll'
 import GlowCard from '@/components/ui/GlowCard'
 import { services } from '@/lib/constants'
+import { OriginButton } from '@/components/ui/origin-button'
+import { ArrowRight, ExternalLink, Mic } from 'lucide-react'
+
+const VoiceReceptionistDemo = dynamic(
+  () => import('@/components/ui/VoiceReceptionistDemo'),
+  { ssr: false }
+)
 
 type Service = (typeof services)[number]
 
 export default function ServicesGrid() {
+  const [voiceDemoOpen, setVoiceDemoOpen] = useState(false)
   const aiServices = services.filter(s => s.category === 'ai')
   const buildServices = services.filter(s => s.category === 'build')
 
@@ -91,7 +101,7 @@ export default function ServicesGrid() {
                       gap: 8,
                       fontSize: 12,
                       color: 'var(--color-muted)',
-                      marginBottom: svc.demoUrl ? 20 : 0,
+                      marginBottom: (svc.demoUrl || (svc as any).demoType === 'voice-receptionist') ? 20 : 0,
                     }}>
                       <span style={{
                         display: 'inline-block',
@@ -107,33 +117,27 @@ export default function ServicesGrid() {
                     </p>
 
                     {svc.demoUrl && (
-                      <a
-                        href={svc.demoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          marginTop: 'auto',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: 'var(--color-accent)',
-                          textDecoration: 'none',
-                          letterSpacing: '0.03em',
-                          transition: 'opacity 0.2s',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                      <OriginButton
+                        onClick={() => window.open(svc.demoUrl, '_blank', 'noopener,noreferrer')}
+                        style={{ marginTop: 'auto', alignSelf: 'flex-start', paddingLeft: '28px', paddingRight: '28px' }}
+                        className="h-10 text-sm rounded-lg border border-[#0d1117] bg-white text-[#0d1117] font-semibold"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                        </svg>
+                        <ExternalLink size={13} />
                         {svc.demoLabel ?? 'Try the demo'}
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                      </a>
+                        <ArrowRight size={13} />
+                      </OriginButton>
+                    )}
+
+                    {(svc as any).demoType === 'voice-receptionist' && (
+                      <OriginButton
+                        onClick={() => setVoiceDemoOpen(true)}
+                        style={{ marginTop: 'auto', alignSelf: 'flex-start', paddingLeft: '28px', paddingRight: '28px' }}
+                        className="h-10 text-sm rounded-lg border border-[#0d1117] bg-white text-[#0d1117] font-semibold"
+                      >
+                        <Mic size={13} />
+                        {(svc as any).demoLabel ?? 'Try the AI Receptionist'}
+                        <ArrowRight size={13} />
+                      </OriginButton>
                     )}
                   </div>
                 </GlowCard>
@@ -298,6 +302,12 @@ export default function ServicesGrid() {
           })}
         </div>
       </div>
+
+      <VoiceReceptionistDemo
+        open={voiceDemoOpen}
+        onClose={() => setVoiceDemoOpen(false)}
+      />
+
       <style>{`
         @media (max-width: 768px) {
           .services-grid-2 { grid-template-columns: 1fr !important; }

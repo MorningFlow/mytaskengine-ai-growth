@@ -1,6 +1,12 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import dynamic from 'next/dynamic'
+
+const VoiceReceptionistDemo = dynamic(
+  () => import('@/components/ui/VoiceReceptionistDemo'),
+  { ssr: false }
+)
 
 export default function Hero() {
   // phase: 'intro' → video plays fullscreen
@@ -8,6 +14,7 @@ export default function Hero() {
   // phase: 'done' → video still visible as bg, everything settled
   const [phase, setPhase] = useState<'intro' | 'transitioning' | 'done'>('intro')
   const [isMobile, setIsMobile] = useState(false)
+  const [voiceDemoOpen, setVoiceDemoOpen] = useState(false)
   const [coverScale, setCoverScale] = useState(1)
   const [isZoomedOut, setIsZoomedOut] = useState(false)
   const [hasHydrated, setHasHydrated] = useState(false)
@@ -372,6 +379,44 @@ export default function Hero() {
             >
               Book My Free AI Audit <span>→</span>
             </button>
+            <button
+              onClick={() => setVoiceDemoOpen(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                height: 44,
+                padding: '0 24px',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 14,
+                fontWeight: 500,
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.12)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                backdropFilter: 'blur(8px)',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(22, 199, 132, 0.12)'
+                e.currentTarget.style.borderColor = 'rgba(22, 199, 132, 0.3)'
+                e.currentTarget.style.color = 'var(--color-accent)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+              Talk to Aria
+            </button>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>
               Free. No pitch. Just clarity.
             </p>
@@ -423,6 +468,11 @@ export default function Hero() {
           .hero-text-col { max-width: 100% !important; }
         }
       `}</style>
+
+      <VoiceReceptionistDemo
+        open={voiceDemoOpen}
+        onClose={() => setVoiceDemoOpen(false)}
+      />
     </section>
   )
 }
