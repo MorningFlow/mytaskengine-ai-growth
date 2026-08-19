@@ -6,8 +6,11 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrollY, setScrollY] = useState(0)
   const [introPhase, setIntroPhase] = useState<'intro' | 'transitioning' | 'done' | null>(null)
+  // True once we've read the DOM — prevents flicker on homepage before Hero sets its attribute
+  const [hasCheckedIntro, setHasCheckedIntro] = useState(false)
 
-  // Read intro phase from the document root attribute set by Hero
+  // Read intro phase from the document root attribute set by Hero.
+  // On non-hero pages (legal etc.) the attribute is never set → introPhase stays null → show nav.
   useEffect(() => {
     const root = document.documentElement
     const initial = root.getAttribute('data-intro-phase') as typeof introPhase
@@ -17,7 +20,10 @@ export default function Navbar() {
       setIntroPhase(root.getAttribute('data-intro-phase') as typeof introPhase)
     })
     observer.observe(root, { attributes: true, attributeFilter: ['data-intro-phase'] })
-    return () => observer.disconnect()
+
+    // Short delay so Hero's useEffect has time to set 'intro' before we reveal the nav
+    const t = setTimeout(() => setHasCheckedIntro(true), 80)
+    return () => { observer.disconnect(); clearTimeout(t) }
   }, [])
 
   useEffect(() => {
@@ -53,7 +59,9 @@ export default function Navbar() {
     { label: 'FAQ',          href: '#faq' },
   ]
 
-  const showNav = introPhase === 'done' || introPhase === 'transitioning'
+  // Show nav when: on non-intro pages (null) OR after intro has transitioned/finished.
+  // hasCheckedIntro prevents a flash on the homepage before Hero sets its attribute.
+  const showNav = hasCheckedIntro && (introPhase === null || introPhase === 'done' || introPhase === 'transitioning')
 
   const isIntro = introPhase === 'intro'
 

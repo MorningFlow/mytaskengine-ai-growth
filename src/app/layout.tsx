@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CalEmbed from '@/components/ui/CalEmbed'
 import { FloatingAiAssistant } from '@/components/ui/glowing-ai-chat-assistant'
+import CookieConsent from '@/components/ui/CookieConsent'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <Footer />
         <FloatingAiAssistant />
+        <CookieConsent />
       </body>
     </html>
   )

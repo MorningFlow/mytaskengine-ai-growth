@@ -1,40 +1,48 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { CONSENT_EVENT, getStoredConsent, type ConsentValue } from '@/components/ui/CookieConsent'
 
+/**
+ * Loads and initialises the Cal.com embed script ONLY after the user has
+ * accepted cookies. Listens for the mte:consent-update custom event so that
+ * consent given on the same page load is handled immediately.
+ */
 export default function CalEmbed() {
-  useEffect(() => {
-    (function (C, A, L) {
-      let p = function (a: any, ar: any) {
-        a.q.push(ar)
-      }
-      let d = C.document
+  const loaded = useRef(false)
+
+  function initCal() {
+    if (loaded.current) return
+    loaded.current = true
+
+    ;(function (C: any, A: string, L: string) {
+      const p = (a: any, ar: any) => { a.q.push(ar) }
+      const d = C.document
       C.Cal =
         C.Cal ||
-        function () {
-          let cal = C.Cal
-          let ar = arguments
+        function (...args: any[]) {
+          const cal = C.Cal
           if (!cal.loaded) {
             cal.ns = {}
             cal.q = cal.q || []
             d.head.appendChild(d.createElement('script')).src = A
             cal.loaded = true
           }
-          if (ar[0] === L) {
-            const api: any = function () {
-              p(api, arguments)
-            }
-            const namespace = ar[1]
+          if (args[0] === L) {
+            const api: any = (...a: any[]) => { p(api, a) }
+            const namespace = args[1]
             api.q = api.q || []
             if (typeof namespace === 'string') {
               cal.ns[namespace] = cal.ns[namespace] || api
-              p(cal.ns[namespace], ar)
+              p(cal.ns[namespace], args)
               p(cal, ['initNamespace', namespace])
-            } else p(cal, ar)
+            } else {
+              p(cal, args)
+            }
             return
           }
-          p(cal, ar)
+          p(cal, args)
         }
-    })(window as any, 'https://app.cal.com/embed/embed.js', 'init')
+    })(window, 'https://app.cal.com/embed/embed.js', 'init')
 
     const Cal = (window as any).Cal
     if (Cal) {
@@ -43,16 +51,31 @@ export default function CalEmbed() {
         theme: 'dark',
         cssVarsPerTheme: {
           light: { 'cal-brand': '#0F1720' },
-          dark: { 'cal-brand': '#0F1720' },
+          dark:  { 'cal-brand': '#0F1720' },
         },
         hideEventTypeDetails: false,
         layout: 'month_view',
       })
-      // Preload the booking modal data to reduce loading time on click
-      Cal.ns['30min']('preload', {
-        calLink: 'mytaskengine/30min',
-      })
+      Cal.ns['30min']('preload', { calLink: 'mytaskengine/30min' })
     }
+  }
+
+  useEffect(() => {
+    // Returning visitor — consent already stored
+    if (getStoredConsent() === 'accepted') {
+      initCal()
+      return
+    }
+
+    // First visit — wait for the banner decision
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<ConsentValue>).detail === 'accepted') {
+        initCal()
+      }
+    }
+    window.addEventListener(CONSENT_EVENT, handler)
+    return () => window.removeEventListener(CONSENT_EVENT, handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return null

@@ -49,6 +49,10 @@ export default function TrustBar() {
           .trust-bar-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
+      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-muted)', marginTop: 16, opacity: 0.6 }}>
+        * Internal data as of August 2026. Results vary by business type and engagement scope.
+      </p>
     </section>
   )
 }
+

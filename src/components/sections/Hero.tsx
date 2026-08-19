@@ -418,8 +418,14 @@ export default function Hero() {
               Talk to Aria
             </button>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>
-              Free. No pitch. Just clarity.
-            </p>
+                Free. No pitch. Just clarity.
+              </p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', marginTop: 4 }}>
+                By booking, you agree to our{' '}
+                <a href="/terms" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Terms</a>
+                {' '}&amp;{' '}
+                <a href="/privacy" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Privacy Policy</a>.
+              </p>
           </motion.div>
         </div>{/* end text column */}
 

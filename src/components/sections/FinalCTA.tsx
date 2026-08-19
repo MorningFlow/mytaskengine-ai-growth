@@ -92,6 +92,12 @@ export default function FinalCTA() {
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', marginTop: 16 }}>
             We book a maximum of 8 audits per week. Reserve your slot.
           </p>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.18)', marginTop: 8 }}>
+            By booking, you agree to our{' '}
+            <a href="/terms" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Terms of Service</a>
+            {' '}and{' '}
+            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Privacy Policy</a>.
+          </p>
         </RevealOnScroll>
 
         {/* Trust cards */}

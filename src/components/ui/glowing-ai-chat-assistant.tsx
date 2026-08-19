@@ -431,6 +431,29 @@ const FloatingAiAssistant = () => {
             </button>
           </div>
 
+          {/* Privacy disclosure */}
+          <div style={{
+            padding: '6px 14px 10px',
+            fontSize: 11,
+            color: C.subtle,
+            fontFamily: 'inherit',
+            flexShrink: 0,
+            boxSizing: 'border-box',
+            textAlign: 'center',
+            lineHeight: 1.5,
+            borderTop: `1px solid ${C.divider}`,
+          }}>
+            Chats are processed by our AI.{' '}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: C.accent, textDecoration: 'underline', textUnderlineOffset: 2 }}
+            >
+              Privacy Policy
+            </a>
+          </div>
+
           {/* Session debug info (dev only) */}
           {process.env.NODE_ENV === 'development' && (
             <div style={{

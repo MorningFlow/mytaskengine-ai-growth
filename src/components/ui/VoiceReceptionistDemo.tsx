@@ -84,6 +84,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
   useInjectStyles();
 
   const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
+  const [micConsented, setMicConsented] = useState(false);
 
   const handleCallTimeout = useCallback(() => {
     setShowTimeoutMessage(true);
@@ -112,10 +113,11 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
     };
   }, [open]);
 
-  // Cleanup on close
+  // Reset consent when demo closes so it re-shows on next open
   const handleClose = useCallback(() => {
     disconnect();
     setShowTimeoutMessage(false);
+    setMicConsented(false);
     onClose();
   }, [disconnect, onClose]);
 
@@ -125,9 +127,14 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
       disconnect();
     } else if (status === 'idle' || status === 'error') {
       setShowTimeoutMessage(false);
+      if (!micConsented) {
+        // Show disclosure first — browser permission fires on next click
+        setMicConsented(true);
+        return;
+      }
       connect();
     }
-  }, [status, connect, disconnect]);
+  }, [status, connect, disconnect, micConsented]);
 
   // Retry after error
   const handleRetry = useCallback(() => {
@@ -405,77 +412,121 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
           )}
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          {isError && !showTimeoutMessage && (
-            <button
-              className="vrd-btn"
-              onClick={handleRetry}
-              style={{
-                ...callBtn,
-                background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-                color: C.ink,
-                boxShadow: `0 4px 20px rgba(22, 199, 132, 0.35)`,
-              }}
-            >
-              <RotateCcw size={17} />
-              Try Again
-            </button>
+          {/* ── Mic disclosure card (shown after first click, before connect) ── */}
+          {micConsented && status === 'idle' && !showTimeoutMessage && (
+            <div style={{
+              background: 'rgba(22,199,132,0.07)',
+              border: '1px solid rgba(22,199,132,0.2)',
+              borderRadius: 14,
+              padding: '16px 20px',
+              maxWidth: 380,
+              width: '100%',
+              textAlign: 'center',
+              animation: 'vrd-transcript-in 0.3s ease forwards',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16C784" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>Microphone Required</span>
+              </div>
+              <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.65, marginBottom: 14 }}>
+                This demo captures your voice and streams it to{' '}
+                <a href="https://deepgram.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: C.accent, textDecoration: 'underline' }}>Deepgram</a>
+                {' '}for real-time AI processing. No audio is stored by us.
+                Your browser will ask for microphone permission on the next step.
+              </p>
+              <button
+                className="vrd-btn"
+                onClick={() => { connect(); }}
+                style={{
+                  ...callBtn,
+                  background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                  color: C.ink,
+                  boxShadow: `0 4px 20px rgba(22, 199, 132, 0.35)`,
+                  width: '100%',
+                  justifyContent: 'center',
+                }}
+              >
+                <Phone size={15} />
+                Allow &amp; Start Demo
+              </button>
+            </div>
           )}
 
-          {showTimeoutMessage && (
-            <button
-              className="vrd-btn"
-              onClick={handleRetry}
-              style={{
-                ...callBtn,
-                background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-                color: C.ink,
-                boxShadow: `0 4px 20px rgba(22, 199, 132, 0.35)`,
-              }}
-            >
-              <RotateCcw size={17} />
-              Try Again
-            </button>
-          )}
-
-          {!isError && !showTimeoutMessage && (
-            <button
-              className="vrd-btn"
-              onClick={handleToggleCall}
-              disabled={isConnecting}
-              style={{
-                ...callBtn,
-                opacity: isConnecting ? 0.7 : 1,
-              }}
-            >
-              {isConnecting ? (
-                <>
-                  <Loader2 size={17} style={{ animation: 'vrd-spin 1s linear infinite' }} />
-                  Connecting…
-                </>
-              ) : isConnected ? (
-                <>
-                  <PhoneOff size={17} />
-                  End Call
-                </>
-              ) : (
-                <>
-                  <Phone size={17} />
-                  Talk to Aria
-                </>
+          {/* Action buttons (hidden when mic disclosure is showing) */}
+          {!(micConsented && status === 'idle' && !showTimeoutMessage) && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              {isError && !showTimeoutMessage && (
+                <button
+                  className="vrd-btn"
+                  onClick={handleRetry}
+                  style={{
+                    ...callBtn,
+                    background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                    color: C.ink,
+                    boxShadow: `0 4px 20px rgba(22, 199, 132, 0.35)`,
+                  }}
+                >
+                  <RotateCcw size={17} />
+                  Try Again
+                </button>
               )}
-            </button>
-          )}
 
-          {/* Sub-text */}
-          {status === 'idle' && !showTimeoutMessage && (
-            <p style={{ fontSize: 12, color: C.muted, textAlign: 'center' }}>
-              1-minute live demo · Powered by Deepgram
-            </p>
+              {showTimeoutMessage && (
+                <button
+                  className="vrd-btn"
+                  onClick={handleRetry}
+                  style={{
+                    ...callBtn,
+                    background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                    color: C.ink,
+                    boxShadow: `0 4px 20px rgba(22, 199, 132, 0.35)`,
+                  }}
+                >
+                  <RotateCcw size={17} />
+                  Try Again
+                </button>
+              )}
+
+              {!isError && !showTimeoutMessage && (
+                <button
+                  className="vrd-btn"
+                  onClick={handleToggleCall}
+                  disabled={isConnecting}
+                  style={{ ...callBtn, opacity: isConnecting ? 0.7 : 1 }}
+                >
+                  {isConnecting ? (
+                    <>
+                      <Loader2 size={17} style={{ animation: 'vrd-spin 1s linear infinite' }} />
+                      Connecting…
+                    </>
+                  ) : isConnected ? (
+                    <>
+                      <PhoneOff size={17} />
+                      End Call
+                    </>
+                  ) : (
+                    <>
+                      <Phone size={17} />
+                      Talk to Aria
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* Sub-text */}
+              {status === 'idle' && !showTimeoutMessage && (
+                <p style={{ fontSize: 12, color: C.muted, textAlign: 'center' }}>
+                  1-minute live demo · Powered by Deepgram
+                </p>
+              )}
+            </div>
           )}
-        </div>
       </div>
+
 
       {/* ── Footer ── */}
       <div style={{
