@@ -57,7 +57,7 @@ export default function TermsOfService() {
             <li><strong>Before work begins:</strong> If you cancel a project before any work has commenced, any deposit paid will be refunded in full within 14 days.</li>
             <li><strong>After work has begun:</strong> If you cancel a project after work has commenced, you are liable for the cost of work completed to the date of cancellation. Any deposit paid will be applied against this amount. Any remaining balance will be refunded, or any shortfall will be invoiced.</li>
             <li><strong>Retainers:</strong> Retainer agreements may be cancelled with 30 days&rsquo; written notice. Fees paid for services already delivered are non-refundable.</li>
-            <li><strong>Dissatisfaction:</strong> If you are not satisfied with delivered work, please contact us at <a href="mailto:hello@mytaskengine.com">hello@mytaskengine.com</a>. We will make reasonable efforts to address concerns. Refunds for completed and delivered work are at our sole discretion.</li>
+            <li><strong>Dissatisfaction:</strong> If you are not satisfied with delivered work, please contact us at <a href="mailto:taskengin3@gmail.com">taskengin3@gmail.com</a>. We will make reasonable efforts to address concerns. Refunds for completed and delivered work are at our sole discretion.</li>
           </ul>
 
           <h2>4. AI Tools on This Website</h2>
@@ -116,7 +116,7 @@ export default function TermsOfService() {
           <h2>12. Contact</h2>
           <p>For any legal or contractual queries:</p>
           <ul>
-            <li><strong>Email:</strong> <a href="mailto:hello@mytaskengine.com">hello@mytaskengine.com</a></li>
+            <li><strong>Email:</strong> <a href="mailto:taskengin3@gmail.com">taskengin3@gmail.com</a></li>
           </ul>
 
         </div>

@@ -50,7 +50,7 @@ export default function Footer() {
             AI systems that run your business while you sleep.
           </p>
           <a
-            href="mailto:hello@mytaskengine.com"
+            href="mailto:taskengin3@gmail.com"
             style={{
               fontSize: 13,
               color: 'rgba(255,255,255,0.45)',
@@ -67,7 +67,7 @@ export default function Footer() {
               <rect width="20" height="16" x="2" y="4" rx="2"/>
               <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
             </svg>
-            hello@mytaskengine.com
+            taskengin3@gmail.com
           </a>
         </div>
 
@@ -123,20 +123,20 @@ export default function Footer() {
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65, marginBottom: 4 }}>
             General enquiries
           </p>
-          <a href="mailto:hello@mytaskengine.com" style={{ ...linkBase, marginBottom: 16 }}
+          <a href="mailto:taskengin3@gmail.com" style={{ ...linkBase, marginBottom: 16 }}
             onMouseEnter={e => (e.currentTarget.style.color = '#16C784')}
             onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}
           >
-            hello@mytaskengine.com
+            taskengin3@gmail.com
           </a>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65, marginBottom: 4 }}>
             Grievance officer
           </p>
-          <a href="mailto:hello@mytaskengine.com" style={{ ...linkBase }}
+          <a href="mailto:taskengin3@gmail.com" style={{ ...linkBase }}
             onMouseEnter={e => (e.currentTarget.style.color = '#16C784')}
             onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}
           >
-            hello@mytaskengine.com
+            taskengin3@gmail.com
           </a>
         </div>
       </div>

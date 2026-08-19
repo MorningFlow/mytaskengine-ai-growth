@@ -80,7 +80,7 @@ const WELCOME: Message = {
   text: "Hi there! 👋 I'm Aria, MyTaskEngine’s AI Sales Assistant. How can I help you discover the perfect AI solutions for your business today?",
 };
 
-const ERROR_MSG = "Something went wrong on our end. Please try again or reach us at hello@mytaskengine.com.";
+const ERROR_MSG = "Something went wrong on our end. Please try again or reach us at taskengin3@gmail.com.";
 
 /* ─── Design tokens ───────────────────────────────────────────────────────── */
 const C = {

@@ -40,7 +40,7 @@ export default function PrivacyPolicy() {
           <h2>1. Who We Are</h2>
           <p>MyTaskEngine is an AI automation agency that builds and deploys AI systems for growth-focused business owners. Our contact details:</p>
           <ul>
-            <li><strong>Email:</strong> <a href="mailto:hello@mytaskengine.com">hello@mytaskengine.com</a></li>
+            <li><strong>Email:</strong> <a href="mailto:taskengin3@gmail.com">taskengin3@gmail.com</a></li>
             <li><strong>Website:</strong> mytaskengine.com</li>
             <li><strong>Location:</strong> India</li>
           </ul>
@@ -143,7 +143,7 @@ export default function PrivacyPolicy() {
             <li><strong>Objection:</strong> Object to processing based on legitimate interests.</li>
             <li><strong>Withdraw consent:</strong> Where we rely on consent, you can withdraw it at any time (this does not affect prior processing).</li>
           </ul>
-          <p>To exercise any right, email <a href="mailto:hello@mytaskengine.com">hello@mytaskengine.com</a>. We will respond within 30 days.</p>
+          <p>To exercise any right, email <a href="mailto:taskengin3@gmail.com">taskengin3@gmail.com</a>. We will respond within 30 days.</p>
 
           <h2>9. Children&rsquo;s Privacy</h2>
           <p>Our services are intended for business owners and professionals. We do not knowingly collect personal data from individuals under 18 years of age. If we become aware that we have collected data from a minor, we will delete it promptly.</p>
@@ -157,7 +157,7 @@ export default function PrivacyPolicy() {
           <h2>12. Contact Us</h2>
           <p>For any questions, concerns, or requests related to this Privacy Policy or your personal data:</p>
           <ul>
-            <li><strong>Email:</strong> <a href="mailto:hello@mytaskengine.com">hello@mytaskengine.com</a></li>
+            <li><strong>Email:</strong> <a href="mailto:taskengin3@gmail.com">taskengin3@gmail.com</a></li>
             <li><strong>Website:</strong> <Link href="/">mytaskengine.com</Link></li>
           </ul>
           <p>Under India&rsquo;s DPDPA, you may also file a complaint with the <strong>Data Protection Board of India</strong> if you believe we have violated your data rights.</p>

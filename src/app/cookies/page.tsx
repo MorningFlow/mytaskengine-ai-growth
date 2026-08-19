@@ -99,7 +99,7 @@ export default function CookiePolicy() {
           <ul>
             <li><strong>Our consent banner:</strong> When you first visit the site, you can accept or decline non-essential cookies. You can reset this preference at any time by clearing your browser&rsquo;s local storage for this site.</li>
             <li><strong>Browser settings:</strong> Most browsers allow you to view and delete cookies and local storage. Refer to your browser&rsquo;s help documentation.</li>
-            <li><strong>Opting out of Cal.com:</strong> If you decline cookies, the booking widget will not load. You can still reach us directly at <a href="mailto:hello@mytaskengine.com">hello@mytaskengine.com</a> to arrange a consultation.</li>
+            <li><strong>Opting out of Cal.com:</strong> If you decline cookies, the booking widget will not load. You can still reach us directly at <a href="mailto:taskengin3@gmail.com">taskengin3@gmail.com</a> to arrange a consultation.</li>
           </ul>
           <p>Note: Disabling strictly necessary storage (sessionStorage) may affect the chat widget&rsquo;s ability to maintain conversation context, but will not prevent the site from functioning.</p>
 
@@ -109,7 +109,7 @@ export default function CookiePolicy() {
           <h2>6. Contact</h2>
           <p>For questions about our use of cookies or storage technologies:</p>
           <ul>
-            <li><strong>Email:</strong> <a href="mailto:hello@mytaskengine.com">hello@mytaskengine.com</a></li>
+            <li><strong>Email:</strong> <a href="mailto:taskengin3@gmail.com">taskengin3@gmail.com</a></li>
           </ul>
           <p>Also see our <Link href="/privacy">Privacy Policy</Link> for broader information on how we handle your data.</p>
 
