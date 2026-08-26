@@ -35,38 +35,141 @@ const STYLES = `
     from { opacity: 1; transform: translateY(0);    }
     to   { opacity: 0; transform: translateY(24px); }
   }
+
   .mte-cookie-wrap {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    right: auto;
+    z-index: 10500;
+    width: min(440px, calc(100vw - 48px));
+    background: rgba(13, 17, 23, 0.94);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 0 0 0.5px rgba(255, 255, 255, 0.04) inset,
+      0 1px 0 rgba(255, 255, 255, 0.10) inset,
+      0 20px 48px rgba(0, 0, 0, 0.65);
+    border-radius: 20px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
     animation: mte-cookie-slide-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
+
   .mte-cookie-wrap.dismissing {
     animation: mte-cookie-slide-down 0.32s cubic-bezier(0.55, 0, 1, 0.45) forwards;
   }
-  .mte-cookie-accept {
-    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+
+  .mte-cookie-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
   }
+
+  .mte-cookie-decline {
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font-body);
+    white-space: nowrap;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .mte-cookie-decline:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.24);
+  }
+
+  .mte-cookie-decline:active {
+    transform: scale(0.97);
+  }
+
+  .mte-cookie-accept {
+    height: 38px;
+    padding: 0 20px;
+    border-radius: 10px;
+    border: none;
+    background: #16C784;
+    color: #0D1117;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font-body);
+    box-shadow: 0 4px 16px rgba(22, 199, 132, 0.4);
+    white-space: nowrap;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    box-sizing: border-box;
+  }
+
   .mte-cookie-accept:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 24px rgba(22, 199, 132, 0.55) !important;
+    box-shadow: 0 6px 22px rgba(22, 199, 132, 0.55);
+    background: #19d68f;
   }
+
   .mte-cookie-accept:active {
     transform: scale(0.97) translateY(0);
   }
-  .mte-cookie-decline {
-    transition: background 0.18s ease, color 0.18s ease;
-  }
-  .mte-cookie-decline:hover {
-    background: rgba(255,255,255,0.08) !important;
-    color: rgba(255,255,255,0.9) !important;
+
+  @media (max-width: 640px) {
+    .mte-cookie-wrap {
+      left: 14px;
+      right: 14px;
+      bottom: max(14px, env(safe-area-inset-bottom, 14px));
+      width: auto;
+      max-width: none;
+      padding: 16px;
+      border-radius: 16px;
+      gap: 14px;
+    }
+    .mte-cookie-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .mte-cookie-decline,
+    .mte-cookie-accept {
+      flex: 1;
+      height: 40px;
+      padding: 0 10px;
+      font-size: 13px;
+      text-align: center;
+      justify-content: center;
+    }
   }
 `;
 
 function useInjectStyles() {
   useEffect(() => {
-    if (document.getElementById('mte-cookie-styles')) return;
-    const tag = document.createElement('style');
-    tag.id = 'mte-cookie-styles';
+    let tag = document.getElementById('mte-cookie-styles') as HTMLStyleElement | null;
+    if (!tag) {
+      tag = document.createElement('style');
+      tag.id = 'mte-cookie-styles';
+      document.head.appendChild(tag);
+    }
     tag.textContent = STYLES;
-    document.head.appendChild(tag);
   }, []);
 }
 
@@ -101,25 +204,6 @@ export default function CookieConsent() {
       aria-modal="false"
       aria-label="Cookie consent"
       className={`mte-cookie-wrap${dismissing ? ' dismissing' : ''}`}
-      style={{
-        position: 'fixed',
-        bottom: 20,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10500,
-        width: 'min(640px, calc(100vw - 32px))',
-        background: 'rgba(13, 17, 23, 0.92)',
-        backdropFilter: 'blur(28px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-        border: '1px solid rgba(255, 255, 255, 0.10)',
-        boxShadow:
-          '0 0 0 0.5px rgba(255,255,255,0.04) inset, 0 1px 0 rgba(255,255,255,0.10) inset, 0 24px 64px rgba(0,0,0,0.6)',
-        borderRadius: 20,
-        padding: '20px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-      }}
     >
       {/* Top row: icon + text */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
@@ -152,9 +236,9 @@ export default function CookieConsent() {
               strokeLinecap="round"
               strokeDasharray="2 3"
             />
-            <circle cx="9"  cy="10" r="1.25" fill="#16C784" />
+            <circle cx="9" cy="10" r="1.25" fill="#16C784" />
             <circle cx="14" cy="15" r="1.25" fill="#16C784" />
-            <circle cx="15" cy="9"  r="1"    fill="#16C784" opacity="0.6" />
+            <circle cx="15" cy="9" r="1" fill="#16C784" opacity="0.6" />
             <circle cx="10" cy="14" r="0.75" fill="#16C784" opacity="0.5" />
           </svg>
         </div>
@@ -175,16 +259,16 @@ export default function CookieConsent() {
           <p
             style={{
               fontSize: 13,
-              color: 'rgba(255,255,255,0.45)',
-              lineHeight: 1.65,
+              color: 'rgba(255,255,255,0.55)',
+              lineHeight: 1.6,
               fontFamily: 'var(--font-body)',
               margin: 0,
             }}
           >
             We use{' '}
-            <strong style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Cal.com</strong>{' '}
+            <strong style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>Cal.com</strong>{' '}
             for booking and{' '}
-            <strong style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Deepgram</strong>{' '}
+            <strong style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>Deepgram</strong>{' '}
             for our voice demo — both load only with your consent. See our{' '}
             <a
               href="/cookies"
@@ -203,51 +287,19 @@ export default function CookieConsent() {
       </div>
 
       {/* Button row */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 10,
-          justifyContent: 'flex-end',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div className="mte-cookie-actions">
         <button
+          type="button"
           className="mte-cookie-decline"
           onClick={() => handleChoice('declined')}
-          style={{
-            height: 38,
-            padding: '0 18px',
-            borderRadius: 10,
-            border: '1px solid rgba(255,255,255,0.12)',
-            background: 'transparent',
-            color: 'rgba(255,255,255,0.5)',
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-            whiteSpace: 'nowrap',
-          }}
         >
           Essential only
         </button>
 
         <button
+          type="button"
           className="mte-cookie-accept"
           onClick={() => handleChoice('accepted')}
-          style={{
-            height: 38,
-            padding: '0 22px',
-            borderRadius: 10,
-            border: 'none',
-            background: '#16C784',
-            color: '#0D1117',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-            boxShadow: '0 4px 16px rgba(22, 199, 132, 0.4)',
-            whiteSpace: 'nowrap',
-          }}
         >
           Accept all
         </button>
