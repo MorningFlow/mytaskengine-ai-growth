@@ -5,9 +5,16 @@ import { getDeepgramAgentConfig, MAX_CALL_DURATION_SECONDS } from '@/lib/deepgra
 
 export type AgentStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
+export interface ConversationTurn {
+  role: 'user' | 'assistant';
+  text: string;
+  time: number;
+}
+
 interface UseDeepgramAgentOptions {
   onAudioLevel?: (level: number) => void;
   onCallTimeout?: () => void;
+  onCallEnded?: (history: ConversationTurn[]) => void;
 }
 
 interface UseDeepgramAgentReturn {
@@ -17,6 +24,7 @@ interface UseDeepgramAgentReturn {
   audioLevel: number;
   transcript: string;
   agentTranscript: string;
+  conversationHistory: ConversationTurn[];
   error: string | null;
   elapsedSeconds: number;
 }
@@ -34,6 +42,8 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
   const [audioLevel, setAudioLevel] = useState(0);
   const [transcript, setTranscript] = useState('');
   const [agentTranscript, setAgentTranscript] = useState('');
+  const [conversationHistory, setConversationHistory] = useState<ConversationTurn[]>([]);
+  const conversationHistoryRef = useRef<ConversationTurn[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -311,6 +321,18 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
                 } else if (msg.role === 'assistant') {
                   setAgentTranscript(msg.content || '');
                 }
+                if (msg.content && msg.content.trim()) {
+                  const turn: ConversationTurn = {
+                    role: msg.role === 'user' ? 'user' : 'assistant',
+                    text: msg.content.trim(),
+                    time: elapsedSeconds,
+                  };
+                  setConversationHistory(prev => {
+                    const next = [...prev, turn];
+                    conversationHistoryRef.current = next;
+                    return next;
+                  });
+                }
                 break;
 
               case 'AgentThinking':
@@ -391,7 +413,7 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
       setStatus('error');
       cleanup();
     }
-  }, [cleanup, disconnect, playAudioChunk, startAudioLevelMonitoring, options]);
+  }, [cleanup, disconnect, playAudioChunk, startAudioLevelMonitoring, options, elapsedSeconds]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -407,6 +429,7 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
     audioLevel,
     transcript,
     agentTranscript,
+    conversationHistory,
     error,
     elapsedSeconds,
   };

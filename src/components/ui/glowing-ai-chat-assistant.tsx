@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from 'react';
-import { Send, Bot, X, AlertCircle } from 'lucide-react';
+import { Send, Bot, X, AlertCircle, Sparkles, CheckCircle2, ArrowRight, Calendar, Cpu } from 'lucide-react';
+import { ExtractedLeadData } from '@/app/api/leads/extract/route';
 
 /* ─── Scoped keyframes (namespaced with mte- prefix) ─────────────────────── */
 const STYLES = `
   @keyframes mte-pop-in {
-    0%   { opacity: 0; transform: scale(0.84) translateY(16px); }
+    0%   { opacity: 0; transform: scale(0.88) translateY(16px); }
     100% { opacity: 1; transform: scale(1)    translateY(0);     }
   }
   @keyframes mte-ping {
@@ -30,14 +31,14 @@ const STYLES = `
     transition: transform 0.32s ease, box-shadow 0.32s ease;
   }
   .mte-fab:hover {
-    transform: scale(1.12) rotate(5deg) !important;
+    transform: scale(1.1) rotate(4deg) !important;
     box-shadow:
       0 0 32px rgba(22, 199, 132, 0.7),
       0 0 58px rgba(22, 199, 132, 0.5),
       0 0 78px rgba(22, 199, 132, 0.3) !important;
   }
   .mte-send:hover {
-    transform: scale(1.08) rotate(-3deg) !important;
+    transform: scale(1.06) !important;
     filter: brightness(1.18);
   }
   .mte-send { transition: transform 0.18s ease, filter 0.18s ease; }
@@ -46,9 +47,19 @@ const STYLES = `
   .mte-scroll::-webkit-scrollbar { width: 4px; }
   .mte-scroll::-webkit-scrollbar-track { background: transparent; }
   .mte-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+  .mte-chip:hover {
+    background: rgba(22, 199, 132, 0.15) !important;
+    border-color: rgba(22, 199, 132, 0.4) !important;
+    color: #FFFFFF !important;
+    transform: translateY(-1px);
+  }
+  .mte-cal-btn:hover {
+    filter: brightness(1.12);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(22, 199, 132, 0.35) !important;
+  }
 `;
 
-/* ─── Session ID ──────────────────────────────────────────────────────────── */
 function getOrCreateSessionId(): string {
   const KEY = 'mte_chat_session';
   try {
@@ -60,42 +71,48 @@ function getOrCreateSessionId(): string {
     sessionStorage.setItem(KEY, id);
     return id;
   } catch {
-    // SSR / private browsing fallback
     return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 }
 
-/* ─── Types ───────────────────────────────────────────────────────────────── */
-type Role = 'bot' | 'user';
+type Role = 'bot' | 'user' | 'showcase';
 
 interface Message {
   id: string;
   role: Role;
-  text: string;
+  text?: string;
+  leadData?: ExtractedLeadData;
 }
 
 const WELCOME: Message = {
   id: 'welcome',
   role: 'bot',
-  text: "Hi there! 👋 I'm Aria, MyTaskEngine’s AI Sales Assistant. How can I help you discover the perfect AI solutions for your business today?",
+  text: "Hello. I am Aria, MyTaskEngine's AI Sales & Solutions Assistant. Which operational bottleneck can we help you solve today?",
 };
 
 const ERROR_MSG = "Something went wrong on our end. Please try again or reach us at taskengin3@gmail.com.";
 
-/* ─── Design tokens ───────────────────────────────────────────────────────── */
+const QUICK_CHIPS = [
+  "Missed Call Receptionist",
+  "Instagram DM Booking",
+  "Google Review Booster",
+  "Custom AI Outbound",
+];
+
 const C = {
-  bg:       '#0D1117', // var(--color-ink)
-  border:   'rgba(255,255,255,0.08)',
-  divider:  'rgba(255,255,255,0.06)',
-  text:     '#FFFFFF',
-  muted:    '#6B7280',
-  subtle:   '#52525b',
-  accent:   '#16C784',
+  bg: '#0D1117',
+  border: 'rgba(255,255,255,0.08)',
+  divider: 'rgba(255,255,255,0.06)',
+  text: '#FFFFFF',
+  muted: '#9CA3AF',
+  subtle: '#6B7280',
+  accent: '#16C784',
   accentDk: '#13B371',
-  ink:      '#0D1117',
+  accentBg: 'rgba(22, 199, 132, 0.08)',
+  accentBorder: 'rgba(22, 199, 132, 0.25)',
+  ink: '#0D1117',
 } as const;
 
-/* ─── Style injection ─────────────────────────────────────────────────────── */
 function useInjectStyles() {
   useEffect(() => {
     if (document.getElementById('mte-chat-styles')) return;
@@ -103,11 +120,9 @@ function useInjectStyles() {
     tag.id = 'mte-chat-styles';
     tag.textContent = STYLES;
     document.head.appendChild(tag);
-    // Keep styles alive for the lifetime of the page
   }, []);
 }
 
-/* ─── Typing dots ─────────────────────────────────────────────────────────── */
 const TypingDots = () => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 0' }}>
     {[0, 1, 2].map(i => (
@@ -120,76 +135,213 @@ const TypingDots = () => (
   </div>
 );
 
-/* ─── Message bubble ──────────────────────────────────────────────────────── */
-const Bubble = ({ msg }: { msg: Message }) => {
-  const isUser = msg.role === 'user';
+/**
+ * Inline AI Data Extraction Showcase (The Capabilities Flex)
+ */
+const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData; onEmailSubmit?: (email: string) => void }) => {
+  const [emailInput, setEmailInput] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim()) return;
+    onEmailSubmit?.(emailInput.trim());
+    setSubmitted(true);
+  };
+
   return (
     <div style={{
-      display: 'flex',
-      justifyContent: isUser ? 'flex-end' : 'flex-start',
-      animation: 'mte-fade-in 0.22s ease forwards',
-      marginBottom: 10,
+      margin: '12px 0',
+      background: 'rgba(255, 255, 255, 0.03)',
+      border: `1px solid ${C.accentBorder}`,
+      borderRadius: 16,
+      padding: '16px',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+      animation: 'mte-fade-in 0.3s ease forwards',
       boxSizing: 'border-box',
+      width: '100%',
     }}>
-      {!isUser && (
+      {/* Header Badge */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{
-          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginRight: 8, marginTop: 2,
-          border: '1px solid rgba(255,255,255,0.1)',
-          boxSizing: 'border-box',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 10.5,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: C.accent,
+          background: C.accentBg,
+          padding: '3px 8px',
+          borderRadius: 6,
         }}>
-          <Bot size={14} color={C.ink} />
+          <Cpu size={12} /> Real-Time Chat Intelligence
+        </div>
+
+        <span style={{
+          fontSize: 10.5,
+          fontWeight: 600,
+          color: data.leadScore === 'High Priority' ? C.accent : '#F59E0B',
+          background: data.leadScore === 'High Priority' ? C.accentBg : 'rgba(245, 158, 11, 0.08)',
+          border: `1px solid ${data.leadScore === 'High Priority' ? C.accentBorder : 'rgba(245, 158, 11, 0.25)'}`,
+          padding: '2px 8px',
+          borderRadius: 6,
+        }}>
+          {data.leadScore}
+        </span>
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>
+        Structured Data Captured Live
+      </div>
+      <p style={{ fontSize: 11.5, color: C.muted, margin: '0 0 12px', lineHeight: 1.45 }}>
+        Aria extracted these parameters directly from your conversation stream without forms.
+      </p>
+
+      {/* Grid of Attributes */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Contact</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {data.name || 'Inbound Prospect'}
+          </div>
+          <div style={{ fontSize: 11, color: data.email ? C.accent : C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {data.email || 'Pending email'}
+          </div>
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Industry</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {data.businessType}
+          </div>
+          <div style={{ fontSize: 11, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {data.volumeOrScale}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottleneck */}
+      <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 10 }}>
+        <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Identified Bottleneck</div>
+        <div style={{ fontSize: 12, color: '#E5E7EB', lineHeight: 1.4, marginTop: 2 }}>
+          {data.primaryBottleneck}
+        </div>
+      </div>
+
+      {/* Recommended Solution */}
+      <div style={{ background: C.accentBg, border: `1px solid ${C.accentBorder}`, padding: '8px 10px', borderRadius: 8, marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: C.accent, textTransform: 'uppercase', fontWeight: 600 }}>Recommended Architecture</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginTop: 2 }}>
+          {data.recommendedSolution}
+        </div>
+      </div>
+
+      {/* Email Input Form if missing */}
+      {!data.email && !submitted && (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+          <input
+            type="email"
+            required
+            placeholder="Enter email for implementation roadmap…"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.05)',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              padding: '6px 10px',
+              fontSize: 12,
+              color: C.text,
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+              color: C.ink,
+              border: 'none',
+              borderRadius: 8,
+              padding: '6px 12px',
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Save
+          </button>
+        </form>
+      )}
+
+      {submitted && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: C.accent, marginBottom: 10 }}>
+          <CheckCircle2 size={13} />
+          Roadmap scheduled for delivery to {emailInput}.
         </div>
       )}
-      <div style={{
-        maxWidth: '78%',
-        padding: '10px 14px',
-        borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-        background: isUser
-          ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
-          : 'rgba(255,255,255,0.06)',
-        border: isUser ? 'none' : `1px solid ${C.border}`,
-        color: isUser ? C.ink : C.text,
-        fontSize: 13.5,
-        lineHeight: 1.6,
-        boxShadow: isUser ? `0 4px 14px rgba(22, 199, 132, 0.25)` : 'none',
-        wordBreak: 'break-word',
-        boxSizing: 'border-box',
-        whiteSpace: 'pre-wrap',
-        fontWeight: isUser ? 500 : 400,
-      }}>
-        {msg.text}
-      </div>
+
+      {/* 1-Click Cal.com Button */}
+      <button
+        className="mte-cal-btn"
+        data-cal-link="mytaskengine/30min"
+        data-cal-namespace="30min"
+        data-cal-config='{"layout":"month_view"}'
+        style={{
+          width: '100%',
+          background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+          color: C.ink,
+          border: 'none',
+          padding: '9px 16px',
+          borderRadius: 8,
+          fontSize: 12.5,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          boxShadow: `0 4px 14px rgba(22, 199, 132, 0.25)`,
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <Calendar size={14} />
+        Schedule Free 30-Min AI Audit
+        <ArrowRight size={13} />
+      </button>
     </div>
   );
 };
 
-/* ─── Main component ──────────────────────────────────────────────────────── */
 const FloatingAiAssistant = () => {
   useInjectStyles();
 
-  const [open, setOpen]       = useState(false);
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
-  const [input, setInput]     = useState('');
-  const [typing, setTyping]   = useState(false);
-  const [sessionId]           = useState<string>(() => {
+  const [input, setInput] = useState('');
+  const [typing, setTyping] = useState(false);
+  const [hasExtracted, setHasExtracted] = useState(false);
+  const [latestLeadData, setLatestLeadData] = useState<ExtractedLeadData | null>(null);
+  const [sessionId] = useState<string>(() => {
     if (typeof window === 'undefined') return 'ssr-placeholder';
     return getOrCreateSessionId();
   });
 
-  const chatRef    = useRef<HTMLDivElement>(null);
-  const scrollRef  = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  /* Auto-scroll to bottom when new messages arrive */
+  /* Auto-scroll to bottom */
   useEffect(() => {
     if (scrollRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, typing]);
 
-  /* Focus textarea when panel opens */
+  /* Focus textarea when open */
   useEffect(() => {
     if (open) setTimeout(() => textareaRef.current?.focus(), 60);
   }, [open]);
@@ -205,13 +357,61 @@ const FloatingAiAssistant = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  /* Send message → n8n webhook */
-  const send = useCallback(async () => {
-    const text = input.trim();
+  // Trigger lead extraction and render inline showcase
+  const triggerExtraction = useCallback(async (allMessages: Message[]) => {
+    const transcriptForApi = allMessages
+      .filter(m => m.role === 'user' || m.role === 'bot')
+      .map(m => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), text: m.text || '' }));
+
+    if (transcriptForApi.length < 2) return;
+
+    try {
+      const res = await fetch('/api/leads/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: transcriptForApi }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setLatestLeadData(json.data);
+          setHasExtracted(true);
+
+          // Append showcase message into thread
+          const showcaseMsg: Message = {
+            id: `showcase-${Date.now()}`,
+            role: 'showcase',
+            leadData: json.data,
+          };
+          setMessages(prev => [...prev, showcaseMsg]);
+
+          // Submit to Option A central API
+          await fetch('/api/leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              source: 'website_chat_assistant',
+              sessionId,
+              lead: json.data,
+              transcript: transcriptForApi,
+            }),
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Chat extraction error:', err);
+    }
+  }, [sessionId]);
+
+  /* Send message */
+  const send = useCallback(async (overrideText?: string) => {
+    const text = (overrideText || input).trim();
     if (!text || typing) return;
 
     const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', text };
-    setMessages(prev => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput('');
     setTyping(true);
 
@@ -222,36 +422,65 @@ const FloatingAiAssistant = () => {
         body: JSON.stringify({ message: text, sessionId }),
       });
 
-      if (!res.ok) throw new Error(`n8n returned ${res.status}`);
+      let reply = "I received your message and will structure a customized solution.";
+      if (res.ok) {
+        const data = await res.json();
+        reply = data?.reply ?? data?.output ?? data?.text ?? data?.message ?? reply;
+      }
 
-      const data = await res.json();
-      // n8n Respond to Webhook node → { reply: "..." }
-      const reply: string =
-        data?.reply ??
-        data?.output ??
-        data?.text ??
-        data?.message ??
-        "I received your message and I'm looking into it.";
+      const botMsg: Message = { id: `b-${Date.now()}`, role: 'bot', text: reply };
+      const nextMessages = [...updatedMessages, botMsg];
+      setMessages(nextMessages);
 
-      setMessages(prev => [...prev, { id: `b-${Date.now()}`, role: 'bot', text: reply }]);
+      // Check if contact information (email / phone) or 3+ turns reached
+      const hasEmail = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(text);
+      if (hasEmail || nextMessages.filter(m => m.role === 'user').length >= 3) {
+        if (!hasExtracted || hasEmail) {
+          triggerExtraction(nextMessages);
+        }
+      }
     } catch (err) {
       console.error('[MTE Chat]', err);
       setMessages(prev => [...prev, { id: `err-${Date.now()}`, role: 'bot', text: ERROR_MSG }]);
     } finally {
       setTyping(false);
     }
-  }, [input, typing, sessionId]);
+  }, [input, typing, sessionId, messages, hasExtracted, triggerExtraction]);
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  /* ── Inline styles ── */
+  const handleManualEmailUpdate = async (email: string) => {
+    if (!latestLeadData) return;
+    const updated = {
+      ...latestLeadData,
+      email,
+      leadScore: 'High Priority' as const,
+    };
+    setLatestLeadData(updated);
+
+    try {
+      await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'website_chat_assistant',
+          sessionId,
+          lead: updated,
+        }),
+      });
+    } catch (err) {
+      console.warn('Lead update error:', err);
+    }
+  };
+
+  /* ── Styles ── */
   const fab: CSSProperties = {
     width: 60, height: 60, borderRadius: '50%',
     border: '1.5px solid rgba(255,255,255,0.18)',
     background: `linear-gradient(135deg, ${C.accent} 0%, ${C.accentDk} 100%)`,
-    boxShadow: `0 0 22px rgba(22, 199, 132, 0.5), 0 0 44px rgba(22, 199, 132, 0.35), 0 0 64px rgba(22, 199, 132, 0.2)`,
+    boxShadow: `0 0 22px rgba(22, 199, 132, 0.5), 0 0 44px rgba(22, 199, 132, 0.35)`,
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
     position: 'relative', outline: 'none',
     transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -260,8 +489,8 @@ const FloatingAiAssistant = () => {
 
   const panel: CSSProperties = {
     position: 'absolute', bottom: 76, right: 0,
-    width: 400,
-    background: 'rgba(13, 17, 23, 0.98)', // matched to var(--color-ink)
+    width: 410,
+    background: 'rgba(13, 17, 23, 0.98)',
     border: `1px solid ${C.border}`,
     borderRadius: 20,
     boxShadow: '0 28px 72px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.03)',
@@ -271,14 +500,13 @@ const FloatingAiAssistant = () => {
     display: 'flex', flexDirection: 'column',
     animation: 'mte-pop-in 0.28s cubic-bezier(0.175,0.885,0.32,1.275) forwards',
     boxSizing: 'border-box',
-    maxHeight: '80vh',
+    maxHeight: '82vh',
   };
 
   return (
     <div className="mte-fab-wrap" style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, boxSizing: 'border-box' }}>
-
       {/* ── FAB ── */}
-      <button className="mte-fab" style={fab} onClick={() => setOpen(o => !o)} aria-label="Toggle MyTaskEngine support chat">
+      <button className="mte-fab" style={fab} onClick={() => setOpen(o => !o)} aria-label="Toggle Aria AI Assistant">
         <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: C.accent, opacity: 0.2, animation: 'mte-ping 2.4s ease-out infinite', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, color: C.ink, display: 'flex' }}>
@@ -286,45 +514,44 @@ const FloatingAiAssistant = () => {
         </div>
       </button>
 
-      {/* ── Panel ── */}
+      {/* ── Chat Panel ── */}
       {open && (
         <div ref={chatRef} style={panel}>
-
           {/* Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '15px 18px 13px',
+            padding: '14px 18px',
             borderBottom: `1px solid ${C.divider}`,
             flexShrink: 0,
             boxSizing: 'border-box',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
                 width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
                 background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: '1px solid rgba(255,255,255,0.12)',
-                boxSizing: 'border-box',
               }}>
                 <Bot size={16} color={C.ink} />
               </div>
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: C.text, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-                  MyTaskEngine Support
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: C.text, lineHeight: 1.2 }}>
+                  Aria · AI Solutions Assistant
                 </div>
                 <div style={{ fontSize: 11, color: C.muted, display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent, animation: 'mte-pulse-dot 2s ease-in-out infinite', flexShrink: 0 }} />
-                  AI-powered · usually replies instantly
+                  Automated Qualification &amp; Architecture
                 </div>
               </div>
             </div>
+
             <button
               className="mte-close-btn"
               onClick={() => setOpen(false)}
               style={{
                 background: 'transparent', border: 'none', cursor: 'pointer',
                 color: C.muted, display: 'flex', padding: 6, borderRadius: 8,
-                boxSizing: 'border-box', transition: 'background 0.15s',
+                transition: 'background 0.15s',
               }}
               aria-label="Close chat"
             >
@@ -332,7 +559,7 @@ const FloatingAiAssistant = () => {
             </button>
           </div>
 
-          {/* Message history */}
+          {/* Messages Area */}
           <div
             ref={scrollRef}
             className="mte-scroll"
@@ -340,31 +567,129 @@ const FloatingAiAssistant = () => {
               flex: 1, overflowY: 'auto',
               padding: '16px 16px 8px',
               display: 'flex', flexDirection: 'column',
-              minHeight: 200,
+              minHeight: 220,
               boxSizing: 'border-box',
             }}
           >
-            {messages.map(m => <Bubble key={m.id} msg={m} />)}
+            {messages.map(m => {
+              if (m.role === 'showcase' && m.leadData) {
+                return <InlineShowcaseBubble key={m.id} data={m.leadData} onEmailSubmit={handleManualEmailUpdate} />;
+              }
 
-            {/* Typing indicator */}
+              const isUser = m.role === 'user';
+              return (
+                <div key={m.id} style={{
+                  display: 'flex',
+                  justifyContent: isUser ? 'flex-end' : 'flex-start',
+                  animation: 'mte-fade-in 0.22s ease forwards',
+                  marginBottom: 10,
+                }}>
+                  {!isUser && (
+                    <div style={{
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      marginRight: 8, marginTop: 2,
+                    }}>
+                      <Bot size={13} color={C.ink} />
+                    </div>
+                  )}
+                  <div style={{
+                    maxWidth: '80%',
+                    padding: '9px 13px',
+                    borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                    background: isUser
+                      ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
+                      : 'rgba(255,255,255,0.06)',
+                    border: isUser ? 'none' : `1px solid ${C.border}`,
+                    color: isUser ? C.ink : C.text,
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    boxShadow: isUser ? `0 4px 14px rgba(22, 199, 132, 0.25)` : 'none',
+                    wordBreak: 'break-word',
+                    whiteSpace: 'pre-wrap',
+                    fontWeight: isUser ? 500 : 400,
+                  }}>
+                    {m.text}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Quick Action Chips (shown on turn 1) */}
+            {messages.length === 1 && (
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 6,
+                marginTop: 4,
+                marginBottom: 12,
+                animation: 'mte-fade-in 0.3s ease forwards',
+              }}>
+                {QUICK_CHIPS.map(chip => (
+                  <button
+                    key={chip}
+                    className="mte-chip"
+                    onClick={() => send(`We are evaluating ${chip}. How does it work?`)}
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 20,
+                      padding: '6px 12px',
+                      fontSize: 11.5,
+                      fontWeight: 500,
+                      color: C.muted,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* View Extracted Matrix Chip (if 2+ turns without showcase yet) */}
+            {messages.filter(m => m.role === 'user').length >= 2 && !hasExtracted && (
+              <div style={{ textAlign: 'center', margin: '6px 0 10px' }}>
+                <button
+                  onClick={() => triggerExtraction(messages)}
+                  style={{
+                    background: C.accentBg,
+                    border: `1px solid ${C.accentBorder}`,
+                    color: C.accent,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    borderRadius: 16,
+                    padding: '6px 14px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Cpu size={12} />
+                  View Live Extracted Intelligence
+                </button>
+              </div>
+            )}
+
+            {/* Typing Indicator */}
             {typing && (
               <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 10, animation: 'mte-fade-in 0.2s ease forwards' }}>
                 <div style={{
-                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
                   background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   marginRight: 8, marginTop: 2,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  boxSizing: 'border-box',
                 }}>
-                  <Bot size={14} color={C.ink} />
+                  <Bot size={13} color={C.ink} />
                 </div>
                 <div style={{
-                  padding: '10px 14px',
-                  borderRadius: '16px 16px 16px 4px',
+                  padding: '9px 13px',
+                  borderRadius: '14px 14px 14px 4px',
                   background: 'rgba(255,255,255,0.06)',
                   border: `1px solid ${C.border}`,
-                  boxSizing: 'border-box',
                 }}>
                   <TypingDots />
                 </div>
@@ -372,13 +697,12 @@ const FloatingAiAssistant = () => {
             )}
           </div>
 
-          {/* Input row */}
+          {/* Input Area */}
           <div style={{
             borderTop: `1px solid ${C.divider}`,
-            padding: '12px 14px',
-            display: 'flex', alignItems: 'flex-end', gap: 10,
+            padding: '10px 14px',
+            display: 'flex', alignItems: 'flex-end', gap: 8,
             flexShrink: 0,
-            boxSizing: 'border-box',
           }}>
             <textarea
               ref={textareaRef}
@@ -387,22 +711,21 @@ const FloatingAiAssistant = () => {
               onChange={e => setInput(e.target.value)}
               onKeyDown={onKey}
               rows={1}
-              placeholder="Type your message…"
+              placeholder="Describe your business or workflow bottleneck…"
               style={{
                 flex: 1,
                 background: 'rgba(255,255,255,0.05)',
                 border: `1px solid ${C.border}`,
-                borderRadius: 12,
-                padding: '10px 13px',
-                fontSize: 13.5,
-                lineHeight: 1.55,
+                borderRadius: 10,
+                padding: '9px 12px',
+                fontSize: 13,
+                lineHeight: 1.5,
                 color: C.text,
                 fontFamily: 'inherit',
                 resize: 'none',
                 outline: 'none',
                 caretColor: C.accent,
-                boxSizing: 'border-box',
-                maxHeight: 110,
+                maxHeight: 90,
                 overflowY: 'auto',
                 transition: 'border-color 0.15s',
               }}
@@ -411,68 +734,37 @@ const FloatingAiAssistant = () => {
             />
             <button
               className="mte-send"
-              onClick={send}
+              onClick={() => send()}
               disabled={!input.trim() || typing}
               aria-label="Send message"
               style={{
-                width: 42, height: 42, borderRadius: 12, border: 'none', flexShrink: 0,
+                width: 38, height: 38, borderRadius: 10, border: 'none', flexShrink: 0,
                 background: input.trim() && !typing
                   ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
                   : 'rgba(255,255,255,0.07)',
-                boxShadow: input.trim() && !typing ? `0 4px 16px rgba(22, 199, 132, 0.3)` : 'none',
+                boxShadow: input.trim() && !typing ? `0 4px 14px rgba(22, 199, 132, 0.3)` : 'none',
                 cursor: input.trim() && !typing ? 'pointer' : 'not-allowed',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: input.trim() && !typing ? C.ink : C.subtle,
-                boxSizing: 'border-box',
-                transition: 'background 0.2s, box-shadow 0.2s, color 0.2s',
               }}
             >
-              <Send size={17} />
+              <Send size={15} />
             </button>
           </div>
 
-          {/* Privacy disclosure */}
+          {/* Footer Privacy Disclosure */}
           <div style={{
-            padding: '6px 14px 10px',
-            fontSize: 11,
+            padding: '6px 14px 8px',
+            fontSize: 10.5,
             color: C.subtle,
-            fontFamily: 'inherit',
-            flexShrink: 0,
-            boxSizing: 'border-box',
             textAlign: 'center',
-            lineHeight: 1.5,
             borderTop: `1px solid ${C.divider}`,
           }}>
-            Chats are processed by our AI.{' '}
-            <a
-              href="/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: C.accent, textDecoration: 'underline', textUnderlineOffset: 2 }}
-            >
+            Conversations are structured by AI for qualification.{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: C.accent, textDecoration: 'underline' }}>
               Privacy Policy
             </a>
           </div>
-
-          {/* Session debug info (dev only) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div style={{
-              padding: '4px 14px 8px',
-              fontSize: 10, color: C.subtle, fontFamily: 'monospace',
-              borderTop: `1px solid ${C.divider}`,
-              flexShrink: 0, boxSizing: 'border-box',
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-              <AlertCircle size={9} />
-              session: {sessionId.slice(0, 18)}…
-            </div>
-          )}
-
-          {/* Ambient overlay */}
-          <div style={{
-            position: 'absolute', inset: 0, borderRadius: 20, pointerEvents: 'none',
-            background: 'linear-gradient(135deg, rgba(22, 199, 132, 0.05), transparent 55%, rgba(22, 199, 132, 0.02))',
-          }} />
         </div>
       )}
     </div>
