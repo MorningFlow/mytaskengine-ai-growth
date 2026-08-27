@@ -14,7 +14,7 @@ const STYLES = `
     to   { opacity: 1; }
   }
   @keyframes vrd-slide-up {
-    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    from { opacity: 0; transform: translateY(18px) scale(0.98); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
   @keyframes vrd-spin {
@@ -22,10 +22,10 @@ const STYLES = `
     to   { transform: rotate(360deg); }
   }
   @keyframes vrd-transcript-in {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  .vrd-close:hover { background: rgba(255,255,255,0.12) !important; color: #FFFFFF !important; }
+  .vrd-close:hover { background: rgba(255,255,255,0.14) !important; color: #FFFFFF !important; }
   .vrd-btn:hover { transform: translateY(-1px) !important; filter: brightness(1.08); }
   .vrd-btn:active { transform: translateY(0) scale(0.98) !important; }
   .vrd-cal-btn:hover {
@@ -58,7 +58,7 @@ function useInjectStyles() {
 }
 
 const C = {
-  bgOverlay: 'rgba(10, 14, 20, 0.94)',
+  bgOverlay: 'rgba(10, 14, 20, 0.95)',
   cardBg: 'rgba(13, 17, 23, 0.98)',
   text: '#FFFFFF',
   muted: '#9CA3AF',
@@ -256,7 +256,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
   const isError = status === 'error';
   const remaining = MAX_CALL_DURATION_SECONDS - elapsedSeconds;
 
-  /* ── Overlay Style ── */
+  /* ── Overlay Style (Clean flex column layout with safe scrolling) ── */
   const overlay: CSSProperties = {
     position: 'fixed',
     inset: 0,
@@ -264,20 +264,20 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
     background: C.bgOverlay,
     backdropFilter: 'blur(28px)',
     WebkitBackdropFilter: 'blur(28px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 'clamp(16px, 3vh, 32px) clamp(16px, 2vw, 24px)',
     overflowY: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
     boxSizing: 'border-box',
+    padding: 'clamp(12px, 2.5vh, 24px) clamp(16px, 3vw, 32px)',
     fontFamily: 'inherit',
     animation: 'vrd-fade-in 0.25s ease forwards',
   };
 
   const orbContainer: CSSProperties = {
     position: 'relative',
-    width: 'min(280px, 60vw)',
-    height: 'min(280px, 60vw)',
+    width: 'clamp(170px, 30vh, 260px)',
+    height: 'clamp(170px, 30vh, 260px)',
+    flexShrink: 0,
   };
 
   const callBtn: CSSProperties = {
@@ -285,13 +285,13 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    height: 50,
-    padding: '0 32px',
+    height: 48,
+    padding: '0 28px',
     borderRadius: 14,
     border: 'none',
     cursor: isConnecting ? 'wait' : 'pointer',
     fontFamily: 'inherit',
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: 600,
     letterSpacing: '-0.01em',
     transition: 'all 0.18s ease',
@@ -303,25 +303,18 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
       {/* VIEW A: FULL-SCREEN IMMERSIVE VOICE CALL VIEW                       */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {!extractedLead && (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '100%',
-          minHeight: '100%',
-          position: 'relative',
-        }}>
-          {/* Top Bar Navigation (Floating across top of full screen) */}
+        <>
+          {/* Top Bar Navigation (Always in normal document flow at the top) */}
           <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
+            width: '100%',
+            maxWidth: 960,
+            margin: '0 auto',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            zIndex: 10,
+            flexShrink: 0,
+            zIndex: 20,
+            marginBottom: 10,
           }}>
             {/* Status Pill */}
             <div style={{
@@ -375,24 +368,25 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
             </button>
           </div>
 
-          {/* Center Call Content */}
+          {/* Center Call Content (Naturally centered using margin: auto) */}
           <div style={{
+            margin: 'auto',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 20,
-            maxWidth: 480,
+            gap: 'clamp(12px, 2vh, 18px)',
+            maxWidth: 460,
             width: '100%',
             animation: 'vrd-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            marginTop: 40,
-            marginBottom: 20,
+            padding: '6px 0',
+            boxSizing: 'border-box',
           }}>
             {/* Header Titles */}
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>
+              <h2 style={{ fontSize: 'clamp(19px, 3.5vw, 23px)', fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>
                 Aria · Autonomous Voice Agent
               </h2>
-              <p style={{ fontSize: 13.5, color: C.muted, marginTop: 6, marginBottom: 0 }}>
+              <p style={{ fontSize: 13, color: C.muted, marginTop: 4, marginBottom: 0 }}>
                 High-precision voice assistant for qualification and booking.
               </p>
             </div>
@@ -415,16 +409,16 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '48px 24px',
+                padding: '36px 20px',
                 textAlign: 'center',
-                gap: 16,
+                gap: 14,
               }}>
-                <Loader2 size={36} color={C.accent} style={{ animation: 'vrd-spin 1s linear infinite' }} />
+                <Loader2 size={34} color={C.accent} style={{ animation: 'vrd-spin 1s linear infinite' }} />
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>
                     Extracting Structured Intelligence…
                   </div>
-                  <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>
+                  <div style={{ fontSize: 12.5, color: C.muted, marginTop: 4 }}>
                     Parsing business parameters and qualifying the conversation.
                   </div>
                 </div>
@@ -434,15 +428,15 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
             {/* Live Real-time Subtitle & Transcription Stream */}
             {!isExtracting && (
               <div style={{
-                minHeight: 52,
+                minHeight: 48,
                 width: '100%',
                 maxWidth: 420,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 8,
-                padding: '0 8px',
+                gap: 6,
+                padding: '0 4px',
               }}>
                 {/* User Live Speech Subtitle */}
                 {isConnected && (activeSpeaker === 'user' || isUserSpeaking) && (
@@ -468,7 +462,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                         {isUserSpeaking ? 'You (Speaking…)' : 'You'}
                       </span>
                     </div>
-                    <p style={{ fontSize: 13.5, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
+                    <p style={{ fontSize: 13, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
                       {userTranscript ? `"${userTranscript}"` : 'Listening to your speech…'}
                     </p>
                   </div>
@@ -492,7 +486,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                         {isAgentSpeaking ? 'Aria (Speaking…)' : 'Aria'}
                       </span>
                     </div>
-                    <p style={{ fontSize: 13.5, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
+                    <p style={{ fontSize: 13, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
                       "{agentTranscript || AGENT_GREETING}"
                     </p>
                   </div>
@@ -500,21 +494,21 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
 
                 {/* Connecting state */}
                 {isConnecting && (
-                  <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
+                  <p style={{ fontSize: 12.5, color: C.muted, margin: 0 }}>
                     Connecting to voice infrastructure…
                   </p>
                 )}
 
                 {/* Idle initial state */}
                 {status === 'idle' && !micConsented && (
-                  <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
+                  <p style={{ fontSize: 12.5, color: C.muted, margin: 0 }}>
                     Experience real-time two-way voice qualification.
                   </p>
                 )}
 
                 {/* Connected initial idle state */}
                 {isConnected && !userTranscript && !agentTranscript && (
-                  <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
+                  <p style={{ fontSize: 12.5, color: C.muted, margin: 0 }}>
                     Speak into your microphone to talk to Aria…
                   </p>
                 )}
@@ -527,17 +521,17 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                 background: C.accentBg,
                 border: `1px solid ${C.accentBorder}`,
                 borderRadius: 14,
-                padding: '16px 20px',
+                padding: '14px 18px',
                 maxWidth: 380,
                 width: '100%',
                 textAlign: 'center',
                 boxSizing: 'border-box',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 6 }}>
                   <ShieldCheck size={16} color={C.accent} />
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: C.accent }}>Microphone Required</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>Microphone Required</span>
                 </div>
-                <p style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.55, marginBottom: 14 }}>
+                <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginBottom: 12 }}>
                   Streams real-time audio to Deepgram for voice processing. Audio is never stored.
                 </p>
                 <button
@@ -548,6 +542,8 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                     background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
                     color: C.ink,
                     width: '100%',
+                    height: 44,
+                    fontSize: 13.5,
                     boxShadow: `0 4px 18px rgba(22, 199, 132, 0.35)`,
                   }}
                 >
@@ -559,9 +555,9 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
 
             {/* Action Buttons */}
             {!isExtracting && !(micConsented && status === 'idle' && !showTimeoutMessage) && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
                 {isError && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.danger, fontSize: 13, marginBottom: 2 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.danger, fontSize: 12.5, marginBottom: 2 }}>
                     <AlertCircle size={15} />
                     {error || 'Call disconnected unexpectedly'}
                   </div>
@@ -602,7 +598,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                 </button>
 
                 {isConnected && (
-                  <span style={{ fontSize: 12, color: getRemainingColor(elapsedSeconds), fontWeight: 500 }}>
+                  <span style={{ fontSize: 11.5, color: getRemainingColor(elapsedSeconds), fontWeight: 500 }}>
                     {remaining}s remaining in demo
                   </span>
                 )}
@@ -612,27 +608,18 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
 
           {/* Footer Subtext */}
           <div style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
+            width: '100%',
             textAlign: 'center',
-            fontSize: 11.5,
-            color: 'rgba(255,255,255,0.2)',
+            fontSize: 11,
+            color: 'rgba(255,255,255,0.25)',
             letterSpacing: '0.04em',
+            flexShrink: 0,
+            marginTop: 'auto',
+            paddingTop: 8,
           }}>
             MyTaskEngine · Autonomous AI Infrastructure
           </div>
-
-          {/* Ambient gradient overlay */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: `radial-gradient(ellipse at 50% 45%, rgba(22, 199, 132, 0.04) 0%, transparent 65%)`,
-            pointerEvents: 'none',
-            zIndex: 0,
-          }} />
-        </div>
+        </>
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
@@ -640,6 +627,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
       {/* ─────────────────────────────────────────────────────────────────── */}
       {extractedLead && (
         <div style={{
+          margin: 'auto',
           display: 'flex',
           flexDirection: 'column',
           maxWidth: 640,
