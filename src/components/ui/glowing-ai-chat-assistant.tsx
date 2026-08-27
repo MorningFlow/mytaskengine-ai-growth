@@ -421,6 +421,110 @@ const IntelligenceDrawerView = ({
   );
 };
 
+/**
+ * Rich chat message formatter that turns Cal booking URLs and markdown links into interactive buttons.
+ */
+function renderFormattedChatMessage(text: string, isUser: boolean) {
+  if (isUser) return text;
+
+  // Match: [label](url), [cal.com/path], or cal.com/path
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)|\[((?:https?:\/\/)?(?:www\.)?cal\.com\/[^\]]+)\]|((?:https?:\/\/)?(?:www\.)?cal\.com\/[a-zA-Z0-9_\-\/]+)/gi;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[1] && match[2]) {
+      const label = match[1];
+      const url = match[2];
+      const isCal = url.includes('cal.com') || label.toLowerCase().includes('audit') || label.toLowerCase().includes('book');
+
+      if (isCal) {
+        parts.push(
+          <span key={match.index} style={{ display: 'block', margin: '8px 0 4px' }}>
+            <button
+              type="button"
+              onClick={() => openCalModal('mytaskengine/30min')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                color: C.ink,
+                border: 'none',
+                borderRadius: 8,
+                padding: '6px 12px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(22, 199, 132, 0.28)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Calendar size={13} />
+              <span>{label}</span>
+              <ArrowRight size={12} />
+            </button>
+          </span>
+        );
+      } else {
+        parts.push(
+          <a
+            key={match.index}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: C.accent, textDecoration: 'underline', fontWeight: 600 }}
+          >
+            {label}
+          </a>
+        );
+      }
+    } else if (match[3] || match[4]) {
+      parts.push(
+        <span key={match.index} style={{ display: 'block', margin: '8px 0 4px' }}>
+          <button
+            type="button"
+            onClick={() => openCalModal('mytaskengine/30min')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+              color: C.ink,
+              border: 'none',
+              borderRadius: 8,
+              padding: '6px 12px',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(22, 199, 132, 0.28)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Calendar size={13} />
+            <span>Book Free 30-Min AI Audit</span>
+            <ArrowRight size={12} />
+          </button>
+        </span>
+      );
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
 export const GlowingAiChatAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -772,7 +876,7 @@ export const GlowingAiChatAssistant: React.FC = () => {
                         whiteSpace: 'pre-wrap',
                         fontWeight: isUser ? 500 : 400,
                       }}>
-                        {m.text}
+                        {renderFormattedChatMessage(m.text, isUser)}
                       </div>
                     </div>
                   );

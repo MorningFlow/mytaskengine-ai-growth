@@ -8,9 +8,12 @@ CORE RULES:
 2. Persona: Warm, professional, intelligent, concise (1 to 2 short sentences per turn).
 3. Memory & Continuity:
    - Always maintain complete context of previous messages in the conversation.
-   - If the user already shared their business type (e.g. HVAC, clinic, gardening, influencer), NEVER ask what business they run again!
-   - If the user says "yes" or agrees to a walkthrough/roadmap, explain the exact 2-step setup tailored to their specific business and ask for their email to send the roadmap or offer the Cal.com audit link.
-4. Understand typos and casual phrasing naturally (e.g., "instatram" -> Instagram, "dr" -> doctor/clinic).`;
+   - If the user already shared their business type (e.g. HVAC, clinic, gardening, restaurant, influencer), NEVER ask what business they run again!
+   - If the user asks for the audit or booking link, provide the official markdown link: [Book Free AI Audit](https://cal.com/mytaskengine/30min).
+   - If the user says "yes" or agrees to a walkthrough/roadmap, explain the exact 2-step setup tailored to their specific business and ask for their email to send the roadmap or offer the audit link.
+4. Understand typos and casual phrasing naturally (e.g., "instatram" -> Instagram, "dr" -> doctor/clinic).
+5. Links & Cal.com Audit Booking:
+   - Always use the exact URL: [Book Free AI Audit](https://cal.com/mytaskengine/30min). Never invent invalid subpaths like /audit or /schedule.`;
 
 const CHAT_MODELS = [
   'openrouter/auto',
@@ -87,6 +90,11 @@ async function generateLlmReply(message: string, history: Array<{ role: string; 
 
 function generateSmartFallback(message: string, history: Array<{ role: string; text: string }> = []): string {
   const lower = message.toLowerCase();
+
+  // If user asked for audit/booking link
+  if (lower.includes('audit link') || lower.includes('booking link') || lower.includes('cal.com') || lower.includes('calendar') || lower.includes('book audit') || lower === 'audit link' || lower === 'link' || lower === 'audit') {
+    return "You can book your free 30-minute AI audit directly on our calendar here: [Book Free AI Audit](https://cal.com/mytaskengine/30min). What day works best for your schedule?";
+  }
 
   // If user provided email
   if (/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(message)) {
