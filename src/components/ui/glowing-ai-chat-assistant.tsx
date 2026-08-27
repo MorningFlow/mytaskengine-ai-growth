@@ -213,11 +213,11 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
 
         <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Industry</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {data.businessType}
+          <div style={{ fontSize: 12, fontWeight: 600, color: data.businessType ? C.text : C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {data.businessType || 'General Inbound'}
           </div>
           <div style={{ fontSize: 11, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {data.volumeOrScale}
+            {data.volumeOrScale || 'Scale not stated'}
           </div>
         </div>
       </div>
@@ -225,8 +225,8 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
       {/* Bottleneck */}
       <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 10 }}>
         <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Identified Bottleneck</div>
-        <div style={{ fontSize: 12, color: '#E5E7EB', lineHeight: 1.4, marginTop: 2 }}>
-          {data.primaryBottleneck}
+        <div style={{ fontSize: 12, color: data.primaryBottleneck ? '#E5E7EB' : C.muted, lineHeight: 1.4, marginTop: 2 }}>
+          {data.primaryBottleneck || 'No operational bottlenecks specified in chat.'}
         </div>
       </div>
 

@@ -744,11 +744,11 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                 <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
                   Target Industry
                 </div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text, marginTop: 4 }}>
-                  {extractedLead.businessType}
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: extractedLead.businessType ? C.text : C.muted, marginTop: 4 }}>
+                  {extractedLead.businessType || 'General Inbound (Industry not stated)'}
                 </div>
                 <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
-                  {extractedLead.volumeOrScale}
+                  {extractedLead.volumeOrScale || 'Scale not specified'}
                 </div>
               </div>
             </div>
@@ -758,8 +758,8 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
               <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
                 Identified Operational Bottleneck
               </div>
-              <div style={{ fontSize: 13, color: '#E5E7EB', lineHeight: 1.45, marginTop: 4 }}>
-                {extractedLead.primaryBottleneck}
+              <div style={{ fontSize: 13, color: extractedLead.primaryBottleneck ? '#E5E7EB' : C.muted, lineHeight: 1.45, marginTop: 4 }}>
+                {extractedLead.primaryBottleneck || 'No operational bottlenecks specified during conversation.'}
               </div>
             </div>
 

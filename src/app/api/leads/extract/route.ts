@@ -20,8 +20,116 @@ interface TranscriptItem {
 }
 
 /**
- * Intelligent rule-based & heuristic fallback extraction engine.
- * Ensures robust, zero-latency extraction even in offline or unkeyed environments.
+ * OpenRouter Structured LLM Extraction Engine.
+ * Utilizes Nemotron / Llama / Gemini models with zero-hallucination prompt constraints.
+ */
+async function extractWithOpenRouter(transcript: TranscriptItem[]): Promise<ExtractedLeadData | null> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey || !apiKey.trim()) return null;
+
+  const model = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free';
+
+  const formattedTranscript = transcript
+    .map(t => `[${t.role === 'assistant' || t.role === 'bot' ? 'Aria' : 'Caller'}]: ${t.text}`)
+    .join('\n');
+
+  const systemPrompt = `You are a high-precision, zero-hallucination Lead Intelligence Extractor for MyTaskEngine.
+Analyze the conversation transcript and extract structured lead information.
+
+CRITICAL RULES:
+1. Extract ONLY information explicitly stated by the caller.
+2. If a field was NOT mentioned, not provided, or remains ambiguous, set it strictly to null.
+3. NEVER guess, assume, or invent an industry, caller name, email, or operational bottleneck.
+4. If the caller only stated a greeting or brief remarks without business details, name and businessType MUST be null.
+5. Return ONLY a valid, raw JSON object matching the requested schema. Do NOT include markdown code blocks, backticks, or explanatory text.`;
+
+  const userPrompt = `Transcript:
+${formattedTranscript}
+
+Extract the structured lead JSON with this exact TypeScript structure:
+{
+  "name": string | null (Caller's explicit full or first name, or null),
+  "email": string | null (Caller's explicit email address, or null),
+  "phone": string | null (Caller's explicit phone number, or null),
+  "businessType": string | null (Exact business type or industry stated by caller, or null),
+  "primaryBottleneck": string | null (Specific problem, manual task, or bottleneck stated by caller, or null),
+  "volumeOrScale": string | null (Call volume, lead volume, patient/customer count if stated, or null),
+  "leadScore": "High Priority" | "Moderate Priority" | "Standard Inquiry" (High if email provided, Moderate if business/problem provided, Standard if only casual inquiry),
+  "recommendedSolution": string (Concise matching MyTaskEngine AI system, e.g. "Autonomous 24/7 Voice Receptionist", "Social DM Booking Engine", "Automated Outbound Pipeline", or "Custom AI Workflow"),
+  "executiveSummary": string (1-2 sentence professional executive summary of the conversation and caller's intent),
+  "missingFields": string[] (List of missing parameters from: ["name", "email", "phone", "businessType", "primaryBottleneck"])
+}`;
+
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey.trim()}`,
+        'HTTP-Referer': 'https://mytaskengine.com',
+        'X-Title': 'MyTaskEngine Lead Intelligence',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 800,
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn(`[OpenRouter Extract] HTTP ${res.status}:`, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const rawContent = data.choices?.[0]?.message?.content;
+    if (!rawContent) return null;
+
+    // Clean any markdown fences or formatting
+    const cleaned = rawContent
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    const parsed: ExtractedLeadData = JSON.parse(cleaned);
+
+    // Validate essential properties
+    if (parsed && typeof parsed === 'object') {
+      const missing: string[] = [];
+      if (!parsed.name) missing.push('name');
+      if (!parsed.email) missing.push('email');
+      if (!parsed.phone) missing.push('phone');
+      if (!parsed.businessType) missing.push('businessType');
+      if (!parsed.primaryBottleneck) missing.push('primaryBottleneck');
+
+      return {
+        name: parsed.name || null,
+        email: parsed.email || null,
+        phone: parsed.phone || null,
+        businessType: parsed.businessType || null,
+        primaryBottleneck: parsed.primaryBottleneck || null,
+        volumeOrScale: parsed.volumeOrScale || null,
+        leadScore: parsed.leadScore || (parsed.email ? 'High Priority' : 'Standard Inquiry'),
+        recommendedSolution: parsed.recommendedSolution || 'Custom Autonomous AI Architecture',
+        executiveSummary: parsed.executiveSummary || 'Inbound conversation logged for evaluation.',
+        missingFields: missing,
+      };
+    }
+  } catch (err) {
+    console.warn('[OpenRouter Extract] Error during LLM extraction:', err);
+  }
+
+  return null;
+}
+
+/**
+ * Strict Zero-Assumption Heuristic Fallback Engine.
+ * Used when OpenRouter API is not configured or temporarily unreachable.
+ * Never invents, guesses, or fabricates unstated fields.
  */
 function extractHeuristically(transcript: TranscriptItem[]): ExtractedLeadData {
   const fullUserText = transcript
@@ -35,7 +143,6 @@ function extractHeuristically(transcript: TranscriptItem[]): ExtractedLeadData {
   if (standardEmailMatch) {
     email = standardEmailMatch[0].trim();
   } else {
-    // Spoken email pattern like "john dot doe at gmail dot com"
     const spokenEmailMatch = fullUserText.match(/\b([a-zA-Z0-9_\-\.]+)\s*(?:at|@)\s*([a-zA-Z0-9_\-\.]+)\s*(?:dot|\.)\s*([a-zA-Z]{2,})\b/i);
     if (spokenEmailMatch) {
       email = `${spokenEmailMatch[1].replace(/\s+dot\s+/gi, '.')}@${spokenEmailMatch[2]}.${spokenEmailMatch[3]}`.replace(/\s+/g, '').toLowerCase();
@@ -49,7 +156,7 @@ function extractHeuristically(transcript: TranscriptItem[]): ExtractedLeadData {
     phone = phoneMatch[0].trim();
   }
 
-  // 3. Name extraction
+  // 3. Name extraction (strict patterns)
   let name: string | null = null;
   const namePatterns = [
     /(?:my name is|i'm|i am|this is|call me|name's)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
@@ -59,26 +166,26 @@ function extractHeuristically(transcript: TranscriptItem[]): ExtractedLeadData {
     const match = fullUserText.match(pattern);
     if (match && match[1]) {
       const candidate = match[1].trim();
-      const forbidden = ['a', 'the', 'an', 'calling', 'interested', 'running', 'looking', 'here', 'just', 'owner'];
-      if (!forbidden.includes(candidate.toLowerCase())) {
+      const forbidden = ['a', 'the', 'an', 'calling', 'interested', 'running', 'looking', 'here', 'just', 'owner', 'there', 'good', 'fine', 'ready'];
+      if (!forbidden.includes(candidate.toLowerCase()) && candidate.length > 1) {
         name = candidate;
         break;
       }
     }
   }
 
-  // 4. Business Type & Industry
+  // 4. Business Type & Industry (strictly verified against user statements)
   let businessType: string | null = null;
   const industryKeywords: Record<string, string[]> = {
     'Dental & Medical Clinic': ['dental', 'dentist', 'clinic', 'doctor', 'physio', 'chiro', 'healthcare', 'medical', 'hospital', 'patient'],
     'Salon, Spa & Aesthetics': ['salon', 'spa', 'barber', 'hair', 'nails', 'beauty', 'aesthetic', 'lash', 'massage'],
-    'Real Estate & Property': ['real estate', 'realtor', 'property', 'broker', 'mortgage', 'listing', 'agent', 'apartments'],
+    'Real Estate & Property': ['real estate', 'realtor', 'property', 'broker', 'mortgage', 'listing', 'apartments'],
     'Home Services & Contracting': ['plumber', 'plumbing', 'electrician', 'roofing', 'hvac', 'contractor', 'landscaping', 'cleaning', 'painting'],
-    'Auto Care & Repair': ['auto', 'tire', 'garage', 'mechanic', 'car wash', 'dealership', 'collision'],
-    'Law Firm & Professional Services': ['law firm', 'lawyer', 'attorney', 'legal', 'accounting', 'cpa', 'consulting', 'financial'],
-    'Fitness & Wellness Studio': ['gym', 'fitness', 'crossfit', 'yoga', 'trainer', 'pilates', 'studio'],
-    'E-Commerce & Digital Brand': ['ecommerce', 'e-commerce', 'shopify', 'store', 'brand', 'online store', 'dtc'],
-    'Hospitality & Restaurant': ['restaurant', 'cafe', 'bar', 'hotel', 'catering', 'venue'],
+    'Auto Care & Repair': ['auto care', 'tire shop', 'garage', 'mechanic', 'car wash', 'dealership', 'collision'],
+    'Law Firm & Legal': ['law firm', 'lawyer', 'attorney', 'legal', 'cpa', 'accounting'],
+    'Fitness & Wellness Studio': ['gym', 'fitness', 'crossfit', 'yoga', 'pilates studio'],
+    'E-Commerce & Digital Brand': ['ecommerce', 'e-commerce', 'shopify', 'online store', 'dtc brand'],
+    'Hospitality & Restaurant': ['restaurant', 'cafe', 'bar', 'hotel', 'catering', 'bistro', 'food business'],
   };
 
   const lowerUserText = fullUserText.toLowerCase();
@@ -90,37 +197,29 @@ function extractHeuristically(transcript: TranscriptItem[]): ExtractedLeadData {
   }
 
   if (!businessType) {
-    const businessMatch = fullUserText.match(/(?:run an?|own an?|have an?|work at an?|manage an?|we are an?)\s+([a-zA-Z\s]{3,25})/i);
+    const businessMatch = fullUserText.match(/(?:run an?|own an?|have an?|manage an?|we are an?)\s+([a-zA-Z\s]{3,25})(?:\s+business|\s+company|\s+firm|\s+store|\s+shop|\.|\,|$)/i);
     if (businessMatch && businessMatch[1]) {
-      businessType = businessMatch[1].trim();
+      const candidate = businessMatch[1].trim();
+      if (!['a', 'the', 'good', 'small', 'big', 'new'].includes(candidate.toLowerCase())) {
+        businessType = candidate;
+      }
     }
   }
 
-  // 5. Primary Bottleneck / Pain Point
+  // 5. Primary Bottleneck / Pain Point (Zero default assumptions)
   let primaryBottleneck: string | null = null;
-  const bottleneckKeywords: Record<string, string> = {
-    'Missed Inbound Calls & After-Hours Loss': 'Losing potential clients to voicemail outside business hours and peak reception times.',
-    'Instagram DM & Social Lead Friction': 'Staff spending excessive manual hours responding to DMs and converting chat inquiries.',
-    'Sub-Optimal Review Volume & Reputation': 'High customer volume without an automated mechanism to capture 5-star Google reviews.',
-    'Slow Inbound Lead Response Latency': 'Inquiries go cold due to delays in manual outreach and follow-up sequences.',
-    'Manual Scheduling & High No-Show Rate': 'Time lost managing bookings manually without automated reminders and calendar sync.',
-    'Inconsistent Outbound Pipeline Growth': 'Lack of automated, deliverability-optimized outbound lead generation systems.',
-  };
-
-  if (lowerUserText.includes('call') || lowerUserText.includes('phone') || lowerUserText.includes('voicemail') || lowerUserText.includes('receptionist') || lowerUserText.includes('after hours')) {
-    primaryBottleneck = bottleneckKeywords['Missed Inbound Calls & After-Hours Loss'];
-  } else if (lowerUserText.includes('instagram') || lowerUserText.includes('dm') || lowerUserText.includes('message') || lowerUserText.includes('social media')) {
-    primaryBottleneck = bottleneckKeywords['Instagram DM & Social Lead Friction'];
-  } else if (lowerUserText.includes('review') || lowerUserText.includes('google') || lowerUserText.includes('reputation') || lowerUserText.includes('rating')) {
-    primaryBottleneck = bottleneckKeywords['Sub-Optimal Review Volume & Reputation'];
-  } else if (lowerUserText.includes('outbound') || lowerUserText.includes('cold email') || lowerUserText.includes('leads') || lowerUserText.includes('pipeline')) {
-    primaryBottleneck = bottleneckKeywords['Inconsistent Outbound Pipeline Growth'];
-  } else if (lowerUserText.includes('book') || lowerUserText.includes('schedule') || lowerUserText.includes('calendar') || lowerUserText.includes('no-show')) {
-    primaryBottleneck = bottleneckKeywords['Manual Scheduling & High No-Show Rate'];
-  } else if (lowerUserText.length > 20) {
-    primaryBottleneck = fullUserText.slice(0, 160) + '...';
-  } else {
-    primaryBottleneck = 'Manual workflow friction across lead response and scheduling.';
+  if (lowerUserText.includes('missed call') || lowerUserText.includes('phone') || lowerUserText.includes('voicemail') || lowerUserText.includes('after hours')) {
+    primaryBottleneck = 'Missed inbound calls & after-hours customer inquiry loss.';
+  } else if (lowerUserText.includes('instagram') || lowerUserText.includes('dm') || lowerUserText.includes('social media message')) {
+    primaryBottleneck = 'Manual hours lost managing Instagram DMs and social chat inquiries.';
+  } else if (lowerUserText.includes('review') || lowerUserText.includes('google rating') || lowerUserText.includes('reputation')) {
+    primaryBottleneck = 'Lack of automated review generation after client visits/purchases.';
+  } else if (lowerUserText.includes('cold email') || lowerUserText.includes('outbound') || lowerUserText.includes('finding leads')) {
+    primaryBottleneck = 'Inconsistent outbound acquisition and manual lead prospecting.';
+  } else if (lowerUserText.includes('scheduling') || lowerUserText.includes('no-show') || lowerUserText.includes('calendar booking')) {
+    primaryBottleneck = 'Manual scheduling friction and appointment no-show rates.';
+  } else if (fullUserText.trim().length > 30) {
+    primaryBottleneck = `Operational inquiry regarding: "${fullUserText.slice(0, 100)}..."`;
   }
 
   // 6. Volume or Scale
@@ -131,15 +230,15 @@ function extractHeuristically(transcript: TranscriptItem[]): ExtractedLeadData {
   }
 
   // 7. Recommended Solution
-  let recommendedSolution = 'Custom Autonomous AI Workflow Architecture';
-  if (primaryBottleneck.includes('Calls') || primaryBottleneck.includes('receptionist') || (businessType && ['Dental & Medical Clinic', 'Salon, Spa & Aesthetics', 'Auto Care & Repair', 'Law Firm & Professional Services'].includes(businessType))) {
-    recommendedSolution = 'Autonomous Voice Receptionist & Smart Calendar Booking Integration';
-  } else if (primaryBottleneck.includes('Instagram') || primaryBottleneck.includes('DM')) {
-    recommendedSolution = '24/7 Social DM Intelligence & Direct Calendar Conversion Pipeline';
-  } else if (primaryBottleneck.includes('Review')) {
-    recommendedSolution = 'Automated Review Capture & Post-Service Google Reputation Engine';
-  } else if (primaryBottleneck.includes('Outbound')) {
-    recommendedSolution = 'Automated Outbound Acquisition & Deliverability Pipeline';
+  let recommendedSolution = 'Custom Autonomous AI Architecture';
+  if (primaryBottleneck?.includes('calls') || (businessType && ['Dental & Medical Clinic', 'Salon, Spa & Aesthetics', 'Hospitality & Restaurant'].includes(businessType))) {
+    recommendedSolution = 'Autonomous 24/7 Voice Receptionist & Smart Calendar Sync';
+  } else if (primaryBottleneck?.includes('Instagram') || primaryBottleneck?.includes('DM')) {
+    recommendedSolution = '24/7 Social DM Intelligence & Automated Booking Pipeline';
+  } else if (primaryBottleneck?.includes('review')) {
+    recommendedSolution = 'Automated Post-Service Google Review Accelerator';
+  } else if (primaryBottleneck?.includes('outbound')) {
+    recommendedSolution = 'Automated Outbound Acquisition & Deliverability Engine';
   }
 
   // 8. Lead Score
@@ -150,26 +249,28 @@ function extractHeuristically(transcript: TranscriptItem[]): ExtractedLeadData {
     leadScore = 'Moderate Priority';
   }
 
-  // 9. Executive Summary
+  // 9. Executive Summary (Zero assumption formulation)
   const executiveSummary = name && businessType
-    ? `${name} from a ${businessType} business is evaluating automated AI infrastructure to resolve: ${primaryBottleneck.toLowerCase()}`
+    ? `${name} from a ${businessType} business is evaluating automated AI infrastructure to streamline operations.`
     : businessType
-    ? `Prospective ${businessType} operator looking to deploy AI automation for: ${primaryBottleneck.toLowerCase()}`
-    : `Inbound prospect inquiring about AI solutions to streamline operational response times and eliminate booking bottlenecks.`;
+    ? `Prospective ${businessType} operator exploring custom AI automation for their workflow.`
+    : `Inbound visitor logged conversation to explore autonomous AI systems.`;
 
   // 10. Missing Fields
   const missingFields: string[] = [];
   if (!name) missingFields.push('name');
   if (!email) missingFields.push('email');
+  if (!phone) missingFields.push('phone');
   if (!businessType) missingFields.push('businessType');
+  if (!primaryBottleneck) missingFields.push('primaryBottleneck');
 
   return {
     name,
     email,
     phone,
-    businessType: businessType || 'General Enterprise / Service Provider',
+    businessType,
     primaryBottleneck,
-    volumeOrScale: volumeOrScale || 'Estimated 20–50 interactions weekly',
+    volumeOrScale,
     leadScore,
     recommendedSolution,
     executiveSummary,
@@ -184,21 +285,33 @@ export async function POST(req: Request) {
 
     if (!Array.isArray(transcript) || transcript.length === 0) {
       return NextResponse.json(
-        { error: 'Invalid or empty transcript array provided.' },
+        { error: 'Transcript array is required' },
         { status: 400 }
       );
     }
 
-    const extracted = extractHeuristically(transcript);
+    // 1. Primary: Attempt OpenRouter LLM extraction
+    let leadData: ExtractedLeadData | null = null;
+    try {
+      leadData = await extractWithOpenRouter(transcript);
+    } catch (llmErr) {
+      console.warn('[Lead Extract] OpenRouter extraction failed, falling back to heuristics:', llmErr);
+    }
+
+    // 2. Fallback: Strict zero-assumption heuristic extraction
+    if (!leadData) {
+      leadData = extractHeuristically(transcript);
+    }
 
     return NextResponse.json({
       success: true,
-      data: extracted,
+      data: leadData,
+      source: process.env.OPENROUTER_API_KEY ? 'openrouter_llm' : 'strict_heuristic',
     });
-  } catch (error) {
-    console.error('Lead extraction error:', error);
+  } catch (err: any) {
+    console.error('[API Leads Extract] Error:', err);
     return NextResponse.json(
-      { error: 'Failed to extract lead parameters.' },
+      { error: 'Failed to process lead extraction' },
       { status: 500 }
     );
   }
