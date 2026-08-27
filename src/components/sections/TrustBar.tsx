@@ -1,7 +1,7 @@
 'use client';
 
+import Image from 'next/image';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
-import MetaTechProviderBadge from '@/components/ui/MetaTechProviderBadge';
 
 const stats = [
   { end: 47, suffix: '+', label: 'Businesses automated' },
@@ -24,29 +24,23 @@ export default function TrustBar() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 18,
+        gap: 16,
       }}>
-        {/* Clean, Subtle & Prominent Meta Tech Provider Strip */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 12,
-          background: 'rgba(0, 0, 0, 0.02)',
-          border: '1px solid rgba(0, 0, 0, 0.07)',
-          borderRadius: 100,
-          padding: '5px 16px',
-        }}>
-          <MetaTechProviderBadge height={18} />
-          <span style={{
-            fontSize: 12,
-            fontWeight: 500,
-            color: 'var(--color-muted)',
-            borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
-            paddingLeft: 10,
-            whiteSpace: 'nowrap',
-          }}>
-            Official API Architecture
-          </span>
+        {/* Exact Official Meta Tech Provider Badge */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Image
+            src="/meta-tech-provider.png"
+            alt="Meta Tech Provider"
+            width={120}
+            height={48}
+            priority
+            style={{
+              height: 'auto',
+              maxHeight: 44,
+              width: 'auto',
+              display: 'block',
+            }}
+          />
         </div>
 
         {/* Core Metric Counters Grid */}

@@ -1,12 +1,12 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import RevealOnScroll from '@/components/ui/RevealOnScroll'
 import GlowCard from '@/components/ui/GlowCard'
 import { services } from '@/lib/constants'
 import { OriginButton } from '@/components/ui/origin-button'
 import { ArrowRight, ExternalLink, Mic } from 'lucide-react'
-import MetaTechProviderBadge from '@/components/ui/MetaTechProviderBadge'
 
 const VoiceReceptionistDemo = dynamic(
   () => import('@/components/ui/VoiceReceptionistDemo'),
@@ -95,16 +95,18 @@ export default function ServicesGrid() {
                         {s.name}
                       </h3>
                       {s.name === 'DM Setter Engine' && (
-                        <div
-                          title="Official Meta Tech Provider"
+                        <Image
+                          src="/meta-tech-provider.png"
+                          alt="Meta Tech Provider"
+                          width={76}
+                          height={30}
                           style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
+                            height: 26,
+                            width: 'auto',
+                            display: 'block',
                             flexShrink: 0,
                           }}
-                        >
-                          <MetaTechProviderBadge height={16} />
-                        </div>
+                        />
                       )}
                     </div>
                     <p style={{ fontSize: 14, color: 'rgba(13,17,23,0.8)', lineHeight: 1.6, marginBottom: 16 }}>
