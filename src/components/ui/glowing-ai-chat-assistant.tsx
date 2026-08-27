@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from 'react';
 import { Send, Bot, X, AlertCircle, Sparkles, CheckCircle2, ArrowRight, Calendar, Cpu, ArrowLeft } from 'lucide-react';
 import { ExtractedLeadData } from '@/app/api/leads/extract/route';
+import { openCalModal } from '@/components/ui/CalEmbed';
 
 /* ─── Scoped keyframes (namespaced with mte- prefix) ─────────────────────── */
 const STYLES = `
@@ -391,6 +392,7 @@ const IntelligenceDrawerView = ({
       {/* 1-Click Cal.com Button */}
       <button
         className="mte-cal-btn"
+        onClick={() => openCalModal('mytaskengine/30min')}
         data-cal-link="mytaskengine/30min"
         data-cal-namespace="30min"
         data-cal-config='{"layout":"month_view"}'

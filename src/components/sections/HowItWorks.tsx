@@ -1,6 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import RevealOnScroll from '@/components/ui/RevealOnScroll'
+import { openCalModal } from '@/components/ui/CalEmbed'
 
 const steps = [
   {
@@ -209,6 +210,7 @@ export default function HowItWorks() {
         <RevealOnScroll delay={0.4}>
           <div style={{ textAlign: 'center', marginTop: 64 }}>
             <button
+              onClick={() => openCalModal('mytaskengine/30min')}
               data-cal-link="mytaskengine/30min"
               data-cal-namespace="30min"
               data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'

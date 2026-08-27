@@ -6,6 +6,7 @@ import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb';
 import { useDeepgramAgent, ConversationTurn } from '@/lib/use-deepgram-agent';
 import { MAX_CALL_DURATION_SECONDS, AGENT_GREETING } from '@/lib/deepgram-agent-config';
 import { ExtractedLeadData } from '@/app/api/leads/extract/route';
+import { openCalModal } from '@/components/ui/CalEmbed';
 
 /* ─── Scoped keyframes ─────────────────────────────────────────────────────── */
 const STYLES = `
@@ -989,6 +990,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
 
               <button
                 className="vrd-cal-btn"
+                onClick={() => openCalModal('mytaskengine/30min')}
                 data-cal-link="mytaskengine/30min"
                 data-cal-namespace="30min"
                 data-cal-config='{"layout":"month_view"}'

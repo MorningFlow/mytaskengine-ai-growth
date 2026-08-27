@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
+import { openCalModal } from '@/components/ui/CalEmbed'
 
 const VoiceReceptionistDemo = dynamic(
   () => import('@/components/ui/VoiceReceptionistDemo'),
@@ -349,6 +350,7 @@ export default function Hero() {
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}
           >
             <button
+              onClick={() => openCalModal('mytaskengine/30min')}
               data-cal-link="mytaskengine/30min"
               data-cal-namespace="30min"
               data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'

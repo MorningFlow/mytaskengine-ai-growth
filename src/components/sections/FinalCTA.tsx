@@ -1,6 +1,7 @@
 'use client'
 import RevealOnScroll from '@/components/ui/RevealOnScroll'
 import GlowCard from '@/components/ui/GlowCard'
+import { openCalModal } from '@/components/ui/CalEmbed'
 
 const trustPoints = [
   { label: 'No commitment', body: 'If it\'s not a fit, we\'ll tell you that on the call.' },
@@ -58,6 +59,7 @@ export default function FinalCTA() {
 
         <RevealOnScroll delay={0.1}>
           <button
+            onClick={() => openCalModal('mytaskengine/30min')}
             data-cal-link="mytaskengine/30min"
             data-cal-namespace="30min"
             data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'

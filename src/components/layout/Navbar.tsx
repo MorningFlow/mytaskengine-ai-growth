@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { openCalModal } from '@/components/ui/CalEmbed'
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -158,6 +159,7 @@ export default function Navbar() {
           ))}
 
           <button
+            onClick={() => openCalModal('mytaskengine/30min')}
             data-cal-link="mytaskengine/30min"
             data-cal-namespace="30min"
             data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'
@@ -313,7 +315,10 @@ export default function Navbar() {
               data-cal-link="mytaskengine/30min"
               data-cal-namespace="30min"
               data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'
-              onClick={() => setMobileOpen(false)}
+              onClick={() => {
+                setMobileOpen(false);
+                openCalModal('mytaskengine/30min');
+              }}
               style={{
                 display: 'block',
                 width: '100%',

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useCallback } from 'react'
 import { formatCurrency } from '@/lib/utils'
+import { openCalModal } from '@/components/ui/CalEmbed'
 
 export default function ROICalculator() {
   const [leads, setLeads] = useState(80)
@@ -152,6 +153,7 @@ export default function ROICalculator() {
           </p>
 
           <button
+            onClick={() => openCalModal('mytaskengine/30min')}
             data-cal-link="mytaskengine/30min"
             data-cal-namespace="30min"
             data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true","theme":"dark"}'
