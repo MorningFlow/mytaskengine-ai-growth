@@ -523,77 +523,90 @@ export const GlowingAiChatAssistant: React.FC = () => {
           {/* Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 18px',
+            padding: '12px 16px',
             borderBottom: `1px solid ${C.divider}`,
             flexShrink: 0,
             boxSizing: 'border-box',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
               <div style={{
-                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
                 background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: '1px solid rgba(255,255,255,0.12)',
               }}>
-                <Bot size={16} color={C.ink} />
+                <Bot size={15} color={C.ink} />
               </div>
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: C.text, lineHeight: 1.2 }}>
-                  Aria · AI Solutions Assistant
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text, lineHeight: 1.2 }}>
+                  Aria
                 </div>
-                <div style={{ fontSize: 11, color: C.muted, display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: C.muted, display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent, animation: 'mte-pulse-dot 2s ease-in-out infinite', flexShrink: 0 }} />
-                  Automated Qualification &amp; Architecture
+                  Solutions Assistant · Active
                 </div>
               </div>
             </div>
 
-            {/* Header Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {latestLeadData && (
-                <button
-                  className="mte-intel-pill"
-                  onClick={() => setShowIntelDrawer(prev => !prev)}
-                  title={showIntelDrawer ? "Return to chat conversation" : "View real-time structured intelligence"}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    background: showIntelDrawer
-                      ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
-                      : 'rgba(22, 199, 132, 0.12)',
-                    border: `1px solid ${showIntelDrawer ? C.accent : 'rgba(22, 199, 132, 0.3)'}`,
-                    borderRadius: 14,
-                    padding: '4px 9px',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: showIntelDrawer ? C.ink : C.accent,
-                    cursor: 'pointer',
-                    transition: 'all 0.18s ease',
-                  }}
-                >
-                  <Cpu size={12} />
-                  <span>{showIntelDrawer ? "Chat" : "AI Data"}</span>
-                  {!showIntelDrawer && (
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.accent, animation: 'mte-pulse-dot 1.5s infinite' }} />
-                  )}
-                </button>
-              )}
+            {/* Clean Header Close Button */}
+            <button
+              className="mte-close-btn"
+              onClick={() => setOpen(false)}
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: C.muted, display: 'flex', padding: 6, borderRadius: 8,
+                transition: 'background 0.15s',
+              }}
+              aria-label="Close chat"
+            >
+              <X size={16} />
+            </button>
+          </div>
 
+          {/* Sub-Header AI Roadmap Ribbon (High-Converting, Uncluttered CTA) */}
+          {latestLeadData && !showIntelDrawer && (
+            <div style={{
+              background: 'linear-gradient(90deg, rgba(22, 199, 132, 0.14), rgba(22, 199, 132, 0.05))',
+              borderBottom: '1px solid rgba(22, 199, 132, 0.22)',
+              padding: '8px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              animation: 'mte-fade-in 0.25s ease forwards',
+              flexShrink: 0,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                <Sparkles size={13} color={C.accent} style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {latestLeadData.recommendedSolution ? `AI Blueprint: ${latestLeadData.recommendedSolution}` : 'Custom AI Roadmap Prepared'}
+                </span>
+              </div>
               <button
-                className="mte-close-btn"
-                onClick={() => setOpen(false)}
+                onClick={() => setShowIntelDrawer(true)}
                 style={{
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  color: C.muted, display: 'flex', padding: 6, borderRadius: 8,
-                  transition: 'background 0.15s',
+                  background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                  color: C.ink,
+                  border: 'none',
+                  borderRadius: 14,
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  boxShadow: '0 2px 8px rgba(22, 199, 132, 0.25)',
+                  transition: 'transform 0.15s ease',
                 }}
-                aria-label="Close chat"
               >
-                <X size={16} />
+                <span>View Roadmap</span>
+                <ArrowRight size={11} />
               </button>
             </div>
-          </div>
+          )}
 
           {/* Conditional View: Structured Intelligence Drawer OR Clean Chat Message Stream */}
           {showIntelDrawer && latestLeadData ? (
