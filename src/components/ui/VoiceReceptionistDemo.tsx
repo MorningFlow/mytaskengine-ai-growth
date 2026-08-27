@@ -14,7 +14,7 @@ const STYLES = `
     to   { opacity: 1; }
   }
   @keyframes vrd-slide-up {
-    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
   @keyframes vrd-spin {
@@ -58,8 +58,8 @@ function useInjectStyles() {
 }
 
 const C = {
-  bgOverlay: 'rgba(10, 14, 20, 0.92)',
-  modalBg: 'rgba(13, 17, 23, 0.98)',
+  bgOverlay: 'rgba(10, 14, 20, 0.94)',
+  cardBg: 'rgba(13, 17, 23, 0.98)',
   text: '#FFFFFF',
   muted: '#9CA3AF',
   subtle: 'rgba(255,255,255,0.45)',
@@ -70,7 +70,7 @@ const C = {
   danger: '#E24B4A',
   dangerDk: '#C93C3B',
   border: 'rgba(255,255,255,0.08)',
-  cardBg: 'rgba(255, 255, 255, 0.03)',
+  tileBg: 'rgba(255, 255, 255, 0.03)',
   ink: '#0D1117',
 } as const;
 
@@ -254,7 +254,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
   const remaining = MAX_CALL_DURATION_SECONDS - elapsedSeconds;
   const displayTranscript = agentTranscript || transcript;
 
-  /* ── Responsive Inline Styles ── */
+  /* ── Overlay Style ── */
   const overlay: CSSProperties = {
     position: 'fixed',
     inset: 0,
@@ -265,34 +265,17 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 'clamp(12px, 2.5vh, 24px) clamp(12px, 2vw, 24px)',
+    padding: 'clamp(16px, 3vh, 32px) clamp(16px, 2vw, 24px)',
     overflowY: 'auto',
     boxSizing: 'border-box',
     fontFamily: 'inherit',
     animation: 'vrd-fade-in 0.25s ease forwards',
   };
 
-  const modalWindow: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    maxWidth: extractedLead ? 660 : 460,
-    width: '100%',
-    maxHeight: 'min(92vh, calc(100dvh - 24px))',
-    background: C.modalBg,
-    border: `1px solid ${C.border}`,
-    borderRadius: 20,
-    boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.04)',
-    overflow: 'hidden',
-    position: 'relative',
-    animation: 'vrd-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-    boxSizing: 'border-box',
-  };
-
   const orbContainer: CSSProperties = {
     position: 'relative',
-    width: 'min(240px, 50vw)',
-    height: 'min(240px, 50vw)',
-    margin: '4px 0',
+    width: 'min(280px, 60vw)',
+    height: 'min(280px, 60vw)',
   };
 
   const callBtn: CSSProperties = {
@@ -300,13 +283,13 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    height: 48,
-    padding: '0 28px',
-    borderRadius: 12,
+    height: 50,
+    padding: '0 32px',
+    borderRadius: 14,
     border: 'none',
     cursor: isConnecting ? 'wait' : 'pointer',
     fontFamily: 'inherit',
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: 600,
     letterSpacing: '-0.01em',
     transition: 'all 0.18s ease',
@@ -314,96 +297,106 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
 
   return (
     <div style={overlay} role="dialog" aria-modal="true" aria-label="Aria Voice Receptionist Demo">
-      <div style={modalWindow}>
-        {/* ── Modal Header (Integrated & Always Visible) ── */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* VIEW A: FULL-SCREEN IMMERSIVE VOICE CALL VIEW                       */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {!extractedLead && (
         <div style={{
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 18px',
-          borderBottom: `1px solid ${C.border}`,
-          background: 'rgba(255, 255, 255, 0.02)',
-          flexShrink: 0,
+          justifyContent: 'center',
+          width: '100%',
+          minHeight: '100%',
+          position: 'relative',
         }}>
-          {/* Status Badge */}
+          {/* Top Bar Navigation (Floating across top of full screen) */}
           <div style={{
-            display: 'inline-flex',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            padding: '5px 12px',
-            borderRadius: 16,
-            background: 'rgba(255,255,255,0.05)',
-            border: `1px solid ${C.border}`,
-            fontSize: 12,
-            color: C.text,
-            fontWeight: 500,
+            justifyContent: 'space-between',
+            zIndex: 10,
           }}>
-            <span style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: isConnected ? C.accent : isConnecting ? '#F59E0B' : isError ? C.danger : C.muted,
-              boxShadow: isConnected ? `0 0 8px ${C.accent}` : 'none',
-            }} />
-            {isConnected
-              ? `Live Call · ${formatTime(elapsedSeconds)}`
-              : isConnecting
-              ? 'Initializing Aria…'
-              : isExtracting
-              ? 'Structuring Voice Intelligence…'
-              : extractedLead
-              ? 'Real-Time Voice Intelligence'
-              : 'AI Voice Receptionist'}
-          </div>
-
-          {/* Close Button */}
-          <button
-            className="vrd-close"
-            onClick={handleClose}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
+            {/* Status Pill */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 14px',
+              borderRadius: 20,
               background: 'rgba(255,255,255,0.06)',
               border: `1px solid ${C.border}`,
-              color: C.muted,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
-            }}
-            aria-label="Close demo"
-          >
-            <X size={16} />
-          </button>
-        </div>
+              fontSize: 12.5,
+              color: C.text,
+              fontWeight: 500,
+            }}>
+              <span style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: isConnected ? C.accent : isConnecting ? '#F59E0B' : isError ? C.danger : C.muted,
+                boxShadow: isConnected ? `0 0 8px ${C.accent}` : 'none',
+              }} />
+              {isConnected
+                ? `Live Call · ${formatTime(elapsedSeconds)}`
+                : isConnecting
+                ? 'Initializing Aria…'
+                : isExtracting
+                ? 'Structuring Voice Intelligence…'
+                : 'AI Voice Receptionist'}
+            </div>
 
-        {/* ── Scrollable Modal Body ── */}
-        <div className="vrd-scroll" style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: 'clamp(16px, 2.5vh, 22px)',
-          display: 'flex',
-          flexDirection: 'column',
-          boxSizing: 'border-box',
-        }}>
-          {/* ───────────────────────────────────────────────────────────────── */}
-          {/* VIEW 1: LIVE ORB & CALL CONTROLS                                  */}
-          {/* ───────────────────────────────────────────────────────────────── */}
-          {!extractedLead && !isExtracting && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%', margin: 'auto 0' }}>
-              {/* Titles */}
-              <div style={{ textAlign: 'center' }}>
-                <h2 style={{ fontSize: 'clamp(18px, 4vw, 21px)', fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>
-                  Aria · Autonomous Voice Agent
-                </h2>
-                <p style={{ fontSize: 13, color: C.muted, marginTop: 4, marginBottom: 0 }}>
-                  Natural conversational qualification and appointment scheduling.
-                </p>
-              </div>
+            {/* Close Button */}
+            <button
+              className="vrd-close"
+              onClick={handleClose}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.06)',
+                border: `1px solid ${C.border}`,
+                color: C.muted,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+              aria-label="Close demo"
+            >
+              <X size={17} />
+            </button>
+          </div>
 
-              {/* Orb Visualizer */}
+          {/* Center Call Content */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 20,
+            maxWidth: 480,
+            width: '100%',
+            animation: 'vrd-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            marginTop: 40,
+            marginBottom: 20,
+          }}>
+            {/* Header Titles */}
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>
+                Aria · Autonomous Voice Agent
+              </h2>
+              <p style={{ fontSize: 13.5, color: C.muted, marginTop: 6, marginBottom: 0 }}>
+                High-precision voice assistant for qualification and booking.
+              </p>
+            </div>
+
+            {/* Orb Visualizer */}
+            {!isExtracting && (
               <div style={orbContainer}>
                 <VoicePoweredOrb
                   enableVoiceControl={isConnected}
@@ -411,22 +404,47 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                   externalAudioLevel={audioLevel}
                 />
               </div>
+            )}
 
-              {/* Live Transcript / Subtitle Box */}
+            {/* Extraction Loader */}
+            {isExtracting && (
               <div style={{
-                minHeight: 44,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 24px',
+                textAlign: 'center',
+                gap: 16,
+              }}>
+                <Loader2 size={36} color={C.accent} style={{ animation: 'vrd-spin 1s linear infinite' }} />
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>
+                    Extracting Structured Intelligence…
+                  </div>
+                  <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>
+                    Parsing business parameters and qualifying the conversation.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Live Transcript / Subtitle Box */}
+            {!isExtracting && (
+              <div style={{
+                minHeight: 48,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                padding: '0 8px',
-                maxWidth: 380,
+                padding: '0 12px',
+                maxWidth: 420,
               }}>
                 {isConnected && displayTranscript && (
                   <p style={{
-                    fontSize: 13.5,
+                    fontSize: 14,
                     color: agentTranscript ? C.text : C.muted,
-                    lineHeight: 1.5,
+                    lineHeight: 1.55,
                     margin: 0,
                     animation: 'vrd-transcript-in 0.2s ease forwards',
                   }}>
@@ -435,360 +453,424 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                 )}
 
                 {isConnecting && (
-                  <p style={{ fontSize: 12.5, color: C.muted, margin: 0 }}>
+                  <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
                     Connecting to voice infrastructure…
                   </p>
                 )}
 
                 {status === 'idle' && !micConsented && (
-                  <p style={{ fontSize: 12.5, color: C.muted, margin: 0 }}>
+                  <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
                     Experience sub-second human-like voice qualification.
                   </p>
                 )}
               </div>
+            )}
 
-              {/* Microphone Permission Card */}
-              {micConsented && status === 'idle' && !showTimeoutMessage && (
-                <div style={{
-                  background: C.accentBg,
-                  border: `1px solid ${C.accentBorder}`,
-                  borderRadius: 12,
-                  padding: '14px 16px',
-                  maxWidth: 360,
-                  width: '100%',
-                  textAlign: 'center',
-                  boxSizing: 'border-box',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 6 }}>
-                    <ShieldCheck size={15} color={C.accent} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>Microphone Required</span>
+            {/* Microphone Permission Card */}
+            {!isExtracting && micConsented && status === 'idle' && !showTimeoutMessage && (
+              <div style={{
+                background: C.accentBg,
+                border: `1px solid ${C.accentBorder}`,
+                borderRadius: 14,
+                padding: '16px 20px',
+                maxWidth: 380,
+                width: '100%',
+                textAlign: 'center',
+                boxSizing: 'border-box',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+                  <ShieldCheck size={16} color={C.accent} />
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: C.accent }}>Microphone Required</span>
+                </div>
+                <p style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.55, marginBottom: 14 }}>
+                  Streams real-time audio to Deepgram for voice processing. Audio is never stored.
+                </p>
+                <button
+                  className="vrd-btn"
+                  onClick={() => connect()}
+                  style={{
+                    ...callBtn,
+                    background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                    color: C.ink,
+                    width: '100%',
+                    boxShadow: `0 4px 18px rgba(22, 199, 132, 0.35)`,
+                  }}
+                >
+                  <Phone size={15} />
+                  Allow &amp; Start Call
+                </button>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            {!isExtracting && !(micConsented && status === 'idle' && !showTimeoutMessage) && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%' }}>
+                {isError && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.danger, fontSize: 13, marginBottom: 2 }}>
+                    <AlertCircle size={15} />
+                    {error || 'Call disconnected unexpectedly'}
                   </div>
-                  <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginBottom: 12 }}>
-                    Streams real-time audio to Deepgram for voice processing. Audio is never stored.
-                  </p>
-                  <button
-                    className="vrd-btn"
-                    onClick={() => connect()}
-                    style={{
-                      ...callBtn,
-                      background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-                      color: C.ink,
-                      width: '100%',
-                      boxShadow: `0 4px 16px rgba(22, 199, 132, 0.35)`,
-                    }}
-                  >
-                    <Phone size={15} />
-                    Allow &amp; Start Call
-                  </button>
-                </div>
-              )}
+                )}
 
-              {/* Action Buttons */}
-              {!(micConsented && status === 'idle' && !showTimeoutMessage) && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%' }}>
-                  {isError && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.danger, fontSize: 12.5, marginBottom: 2 }}>
-                      <AlertCircle size={14} />
-                      {error || 'Call disconnected unexpectedly'}
-                    </div>
+                <button
+                  className="vrd-btn"
+                  onClick={handleToggleCall}
+                  disabled={isConnecting}
+                  style={{
+                    ...callBtn,
+                    background: isConnected
+                      ? `linear-gradient(135deg, ${C.danger}, ${C.dangerDk})`
+                      : `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                    color: isConnected ? '#FFFFFF' : C.ink,
+                    boxShadow: isConnected
+                      ? `0 4px 20px rgba(226, 75, 74, 0.35)`
+                      : `0 4px 20px rgba(22, 199, 132, 0.35)`,
+                    opacity: isConnecting ? 0.7 : 1,
+                  }}
+                >
+                  {isConnecting ? (
+                    <>
+                      <Loader2 size={16} style={{ animation: 'vrd-spin 1s linear infinite' }} />
+                      Connecting…
+                    </>
+                  ) : isConnected ? (
+                    <>
+                      <PhoneOff size={16} />
+                      End Call &amp; View Summary
+                    </>
+                  ) : (
+                    <>
+                      <Phone size={16} />
+                      Start Voice Demo
+                    </>
                   )}
+                </button>
 
-                  <button
-                    className="vrd-btn"
-                    onClick={handleToggleCall}
-                    disabled={isConnecting}
-                    style={{
-                      ...callBtn,
-                      background: isConnected
-                        ? `linear-gradient(135deg, ${C.danger}, ${C.dangerDk})`
-                        : `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-                      color: isConnected ? '#FFFFFF' : C.ink,
-                      boxShadow: isConnected
-                        ? `0 4px 16px rgba(226, 75, 74, 0.35)`
-                        : `0 4px 16px rgba(22, 199, 132, 0.35)`,
-                      opacity: isConnecting ? 0.7 : 1,
-                    }}
-                  >
-                    {isConnecting ? (
-                      <>
-                        <Loader2 size={16} style={{ animation: 'vrd-spin 1s linear infinite' }} />
-                        Connecting…
-                      </>
-                    ) : isConnected ? (
-                      <>
-                        <PhoneOff size={16} />
-                        End Call &amp; View Summary
-                      </>
-                    ) : (
-                      <>
-                        <Phone size={16} />
-                        Start Voice Demo
-                      </>
-                    )}
-                  </button>
+                {isConnected && (
+                  <span style={{ fontSize: 12, color: getRemainingColor(elapsedSeconds), fontWeight: 500 }}>
+                    {remaining}s remaining in demo
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
 
-                  {isConnected && (
-                    <span style={{ fontSize: 11.5, color: getRemainingColor(elapsedSeconds), fontWeight: 500 }}>
-                      {remaining}s remaining in demo
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          {/* Footer Subtext */}
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            fontSize: 11.5,
+            color: 'rgba(255,255,255,0.2)',
+            letterSpacing: '0.04em',
+          }}>
+            MyTaskEngine · Autonomous AI Infrastructure
+          </div>
 
-          {/* ───────────────────────────────────────────────────────────────── */}
-          {/* VIEW 2: EXTRACTION IN PROGRESS                                    */}
-          {/* ───────────────────────────────────────────────────────────────── */}
-          {isExtracting && (
+          {/* Ambient gradient overlay */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: `radial-gradient(ellipse at 50% 45%, rgba(22, 199, 132, 0.04) 0%, transparent 65%)`,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* VIEW B: POST-CALL INTELLIGENCE EXTRACTOR SHOWCASE                   */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {extractedLead && (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          maxWidth: 640,
+          width: '100%',
+          maxHeight: 'min(88vh, calc(100dvh - 36px))',
+          background: C.cardBg,
+          border: `1px solid ${C.border}`,
+          borderRadius: 20,
+          boxShadow: '0 24px 72px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.04)',
+          overflow: 'hidden',
+          animation: 'vrd-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          boxSizing: 'border-box',
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          {/* Showcase Card Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 20px',
+            borderBottom: `1px solid ${C.border}`,
+            background: 'rgba(255, 255, 255, 0.02)',
+            flexShrink: 0,
+          }}>
             <div style={{
-              display: 'flex',
-              flexDirection: 'column',
+              display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              padding: '36px 16px',
-              textAlign: 'center',
-              gap: 14,
-              margin: 'auto 0',
+              gap: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: C.accent,
+              background: C.accentBg,
+              border: `1px solid ${C.accentBorder}`,
+              padding: '3px 9px',
+              borderRadius: 6,
             }}>
-              <Loader2 size={28} color={C.accent} style={{ animation: 'vrd-spin 1s linear infinite' }} />
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>
-                  Structuring Real-Time Intelligence…
+              <Cpu size={12} /> Real-Time Voice Intelligence
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: extractedLead.leadScore === 'High Priority' ? C.accent : '#F59E0B',
+                background: extractedLead.leadScore === 'High Priority' ? C.accentBg : 'rgba(245, 158, 11, 0.08)',
+                border: `1px solid ${extractedLead.leadScore === 'High Priority' ? C.accentBorder : 'rgba(245, 158, 11, 0.25)'}`,
+                padding: '3px 8px',
+                borderRadius: 6,
+                whiteSpace: 'nowrap',
+              }}>
+                {extractedLead.leadScore}
+              </span>
+
+              <button
+                className="vrd-close"
+                onClick={handleClose}
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${C.border}`,
+                  color: C.muted,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                }}
+                aria-label="Close demo"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+
+          {/* Showcase Scrollable Content */}
+          <div className="vrd-scroll" style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '18px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            boxSizing: 'border-box',
+          }}>
+            <div>
+              <h3 style={{ fontSize: 'clamp(16px, 3.5vw, 18px)', fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>
+                Structured Data Extracted in Real Time
+              </h3>
+              <p style={{ fontSize: 12.5, color: C.muted, margin: '3px 0 0', lineHeight: 1.45 }}>
+                Aria captured, qualified, and structured these parameters directly from your spoken conversation.
+              </p>
+            </div>
+
+            {/* Data Grid: Contact & Industry */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+              <div style={{ background: C.tileBg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
+                  Contact Identification
                 </div>
-                <div style={{ fontSize: 12.5, color: C.muted, marginTop: 4 }}>
-                  Parsing parameters and qualifying the conversation.
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text, marginTop: 4 }}>
+                  {extractedLead.name || 'Visitor (Name not stated)'}
+                </div>
+                <div style={{ fontSize: 12, color: extractedLead.email ? C.accent : C.muted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {extractedLead.email || extractedLead.phone || 'Contact not provided'}
+                </div>
+              </div>
+
+              <div style={{ background: C.tileBg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
+                  Target Industry
+                </div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text, marginTop: 4 }}>
+                  {extractedLead.businessType}
+                </div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+                  {extractedLead.volumeOrScale}
                 </div>
               </div>
             </div>
-          )}
 
-          {/* ───────────────────────────────────────────────────────────────── */}
-          {/* VIEW 3: LIVE AI DATA CAPTURE SHOWCASE                             */}
-          {/* ───────────────────────────────────────────────────────────────── */}
-          {extractedLead && !isExtracting && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-              {/* Header Title & Score */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 12,
-                paddingBottom: 10,
-                borderBottom: `1px solid ${C.border}`,
-              }}>
-                <div>
-                  <h3 style={{ fontSize: 'clamp(15px, 3.5vw, 17px)', fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.02em' }}>
-                    Structured Data Extracted in Real Time
-                  </h3>
-                  <p style={{ fontSize: 12, color: C.muted, margin: '2px 0 0', lineHeight: 1.45 }}>
-                    Aria captured, qualified, and structured these parameters directly from your speech.
-                  </p>
-                </div>
-
-                <span style={{
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  color: extractedLead.leadScore === 'High Priority' ? C.accent : '#F59E0B',
-                  background: extractedLead.leadScore === 'High Priority' ? C.accentBg : 'rgba(245, 158, 11, 0.08)',
-                  border: `1px solid ${extractedLead.leadScore === 'High Priority' ? C.accentBorder : 'rgba(245, 158, 11, 0.25)'}`,
-                  padding: '3px 8px',
-                  borderRadius: 6,
-                  whiteSpace: 'nowrap',
-                }}>
-                  {extractedLead.leadScore}
-                </span>
+            {/* Identified Bottleneck */}
+            <div style={{ background: C.tileBg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
+                Identified Operational Bottleneck
               </div>
-
-              {/* Data Grid: Contact & Business */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
-                <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 12px' }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
-                    Contact Identification
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginTop: 3 }}>
-                    {extractedLead.name || 'Visitor (Name not stated)'}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: extractedLead.email ? C.accent : C.muted, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {extractedLead.email || extractedLead.phone || 'Contact not provided'}
-                  </div>
-                </div>
-
-                <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 12px' }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
-                    Target Industry
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginTop: 3 }}>
-                    {extractedLead.businessType}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: C.muted, marginTop: 1 }}>
-                    {extractedLead.volumeOrScale}
-                  </div>
-                </div>
+              <div style={{ fontSize: 13, color: '#E5E7EB', lineHeight: 1.45, marginTop: 4 }}>
+                {extractedLead.primaryBottleneck}
               </div>
+            </div>
 
-              {/* Identified Bottleneck */}
-              <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 12px' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.subtle, letterSpacing: '0.04em' }}>
-                  Identified Operational Bottleneck
-                </div>
-                <div style={{ fontSize: 12.5, color: '#E5E7EB', lineHeight: 1.45, marginTop: 3 }}>
-                  {extractedLead.primaryBottleneck}
-                </div>
+            {/* Recommended Architecture */}
+            <div style={{ background: 'rgba(22, 199, 132, 0.04)', border: `1px solid ${C.accentBorder}`, borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.accent, letterSpacing: '0.04em' }}>
+                Recommended Architecture
               </div>
-
-              {/* Recommended Architecture */}
-              <div style={{ background: 'rgba(22, 199, 132, 0.04)', border: `1px solid ${C.accentBorder}`, borderRadius: 10, padding: '10px 12px' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: C.accent, letterSpacing: '0.04em' }}>
-                  Recommended Architecture
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginTop: 2 }}>
-                  {extractedLead.recommendedSolution}
-                </div>
-                <div style={{ fontSize: 11.5, color: C.muted, marginTop: 2, lineHeight: 1.4 }}>
-                  {extractedLead.executiveSummary}
-                </div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text, marginTop: 3 }}>
+                {extractedLead.recommendedSolution}
               </div>
-
-              {/* Missing Email Recovery Form */}
-              {!extractedLead.email && !emailSubmitted && (
-                <form onSubmit={handleManualEmailSubmit} style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: `1px dashed ${C.border}`,
-                  borderRadius: 10,
-                  padding: '8px 10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}>
-                  <input
-                    type="email"
-                    required
-                    placeholder="Enter email to receive custom AI roadmap…"
-                    value={manualEmail}
-                    onChange={(e) => setManualEmail(e.target.value)}
-                    style={{
-                      flex: 1,
-                      background: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      fontSize: 12.5,
-                      color: C.text,
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    style={{
-                      background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-                      color: C.ink,
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '6px 12px',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <Send size={12} />
-                    Send Roadmap
-                  </button>
-                </form>
-              )}
-
-              {emailSubmitted && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 12,
-                  color: C.accent,
-                  background: C.accentBg,
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                }}>
-                  <CheckCircle2 size={14} />
-                  Implementation roadmap queued for delivery to {manualEmail}.
-                </div>
-              )}
-
-              {/* Capability Notice */}
-              <div style={{
-                fontSize: 11,
-                color: C.muted,
-                lineHeight: 1.5,
-                borderTop: `1px solid ${C.border}`,
-                paddingTop: 8,
-              }}>
-                <strong style={{ color: C.text, fontWeight: 600 }}>Capability Demonstration:</strong> This exact conversational intelligence pipeline can be deployed on your phone lines, website, or messaging channels to capture and qualify demand 24/7 without forms.
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.45 }}>
+                {extractedLead.executiveSummary}
               </div>
+            </div>
 
-              {/* Actions Footer Bar */}
-              <div className="vrd-actions" style={{
+            {/* Missing Email Recovery Form */}
+            {!extractedLead.email && !emailSubmitted && (
+              <form onSubmit={handleManualEmailSubmit} style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: `1px dashed ${C.border}`,
+                borderRadius: 10,
+                padding: '8px 12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                justifyContent: 'flex-end',
-                paddingTop: 4,
               }}>
-                <button
-                  onClick={() => {
-                    setExtractedLead(null);
-                    setShowTimeoutMessage(false);
-                    connect();
-                  }}
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter email to receive custom AI roadmap…"
+                  value={manualEmail}
+                  onChange={(e) => setManualEmail(e.target.value)}
                   style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: `1px solid ${C.border}`,
-                    color: C.text,
-                    padding: '8px 14px',
-                    borderRadius: 8,
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
                     fontSize: 12.5,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
+                    color: C.text,
+                    fontFamily: 'inherit',
                   }}
-                >
-                  <RotateCcw size={13} />
-                  Test Another Scenario
-                </button>
-
+                />
                 <button
-                  className="vrd-cal-btn"
-                  data-cal-link="mytaskengine/30min"
-                  data-cal-namespace="30min"
-                  data-cal-config='{"layout":"month_view"}'
+                  type="submit"
                   style={{
                     background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
                     color: C.ink,
                     border: 'none',
-                    padding: '9px 18px',
-                    borderRadius: 8,
-                    fontSize: 13,
+                    borderRadius: 6,
+                    padding: '6px 12px',
+                    fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
-                    boxShadow: `0 4px 14px rgba(22, 199, 132, 0.25)`,
-                    transition: 'all 0.2s ease',
+                    gap: 5,
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <Calendar size={14} />
-                  Book Free 30-Min AI Audit
-                  <ArrowRight size={13} />
+                  <Send size={12} />
+                  Send Roadmap
                 </button>
+              </form>
+            )}
+
+            {emailSubmitted && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: C.accent,
+                background: C.accentBg,
+                padding: '8px 12px',
+                borderRadius: 8,
+              }}>
+                <CheckCircle2 size={14} />
+                Implementation roadmap queued for delivery to {manualEmail}.
               </div>
+            )}
+
+            {/* Capability Demonstration Notice */}
+            <div style={{
+              fontSize: 11,
+              color: C.muted,
+              lineHeight: 1.5,
+              borderTop: `1px solid ${C.border}`,
+              paddingTop: 10,
+            }}>
+              <strong style={{ color: C.text, fontWeight: 600 }}>Capability Demonstration:</strong> This exact conversational intelligence pipeline can be deployed on your phone lines, website, or messaging channels to capture and qualify demand 24/7 without forms.
             </div>
-          )}
+
+            {/* Actions Footer Bar */}
+            <div className="vrd-actions" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              justifyContent: 'flex-end',
+              paddingTop: 4,
+            }}>
+              <button
+                onClick={() => {
+                  setExtractedLead(null);
+                  setShowTimeoutMessage(false);
+                  connect();
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${C.border}`,
+                  color: C.text,
+                  padding: '9px 16px',
+                  borderRadius: 8,
+                  fontSize: 12.5,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <RotateCcw size={13} />
+                Test Another Scenario
+              </button>
+
+              <button
+                className="vrd-cal-btn"
+                data-cal-link="mytaskengine/30min"
+                data-cal-namespace="30min"
+                data-cal-config='{"layout":"month_view"}'
+                style={{
+                  background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                  color: C.ink,
+                  border: 'none',
+                  padding: '9px 18px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: `0 4px 14px rgba(22, 199, 132, 0.25)`,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Calendar size={14} />
+                Book Free 30-Min AI Audit
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
