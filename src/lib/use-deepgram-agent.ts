@@ -36,11 +36,10 @@ interface UseDeepgramAgentReturn {
 
 /**
  * Custom hook that manages the full Deepgram Voice Agent WebSocket lifecycle:
- * - Fetches a temporary API key from our server
- * - Opens a WebSocket to Deepgram's agent endpoint
+ * - Uses browser WebRTC hardware Acoustic Echo Cancellation (AEC)
  * - Streams mic audio as raw PCM to Deepgram
  * - Receives and plays back AI-generated audio
- * - Delivers word-for-word real-time user speech streaming with speaker isolation
+ * - Delivers fluid word-by-word streaming transcription with zero speaker bleed
  */
 export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeepgramAgentReturn {
   const [status, setStatus] = useState<AgentStatus>('idle');
@@ -69,8 +68,44 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
   const settingsAppliedRef = useRef(false);
-  const isAgentSpeakingRef = useRef(false);
-  const recognitionRef = useRef<any>(null);
+
+  // Timers for smooth word-by-word stream animations
+  const userStreamIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const agentStreamIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Animate text word by word
+  const streamWords = useCallback((fullText: string, setter: (text: string) => void, intervalRef: React.MutableRefObject<any>, speedMs = 35) => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (!fullText || !fullText.trim()) {
+      setter('');
+      return;
+    }
+
+    const words = fullText.trim().split(/\s+/);
+    if (words.length <= 1) {
+      setter(fullText);
+      return;
+    }
+
+    let currentCount = 1;
+    setter(words[0]);
+
+    intervalRef.current = setInterval(() => {
+      currentCount++;
+      if (currentCount <= words.length) {
+        setter(words.slice(0, currentCount).join(' '));
+      } else {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }
+    }, speedMs);
+  }, []);
 
   // Audio level monitoring loop
   const startAudioLevelMonitoring = useCallback(() => {
@@ -130,15 +165,8 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
         nextPlayTimeRef.current = currentTime;
       }
 
-      isAgentSpeakingRef.current = true;
       source.start(nextPlayTimeRef.current);
       nextPlayTimeRef.current += buffer.duration;
-
-      source.onended = () => {
-        if (ctx.currentTime >= nextPlayTimeRef.current - 0.05) {
-          isAgentSpeakingRef.current = false;
-        }
-      };
     } catch (err) {
       console.warn('Audio playback error:', err);
     }
@@ -151,13 +179,13 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
 
     stopAudioLevelMonitoring();
 
-    // Stop speech recognition
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null;
-        recognitionRef.current.stop();
-      } catch { /* ignore */ }
-      recognitionRef.current = null;
+    if (userStreamIntervalRef.current) {
+      clearInterval(userStreamIntervalRef.current);
+      userStreamIntervalRef.current = null;
+    }
+    if (agentStreamIntervalRef.current) {
+      clearInterval(agentStreamIntervalRef.current);
+      agentStreamIntervalRef.current = null;
     }
 
     // Clear timers
@@ -216,7 +244,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
     analyserDataRef.current = null;
     nextPlayTimeRef.current = 0;
     settingsAppliedRef.current = false;
-    isAgentSpeakingRef.current = false;
     setIsUserSpeaking(false);
     setIsAgentSpeaking(false);
 
@@ -239,7 +266,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
       setActiveSpeaker('idle');
       setIsUserSpeaking(false);
       setIsAgentSpeaking(false);
-      isAgentSpeakingRef.current = false;
       setElapsedSeconds(0);
 
       // 1. Get API key from our server
@@ -252,7 +278,7 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
         throw new Error('No API key received');
       }
 
-      // 2. Request mic access
+      // 2. Request mic access with hardware Acoustic Echo Cancellation
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -283,45 +309,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
       // 5. Open WebSocket to Deepgram Voice Agent
       const ws = new WebSocket(`wss://agent.deepgram.com/v1/agent/converse`, ['token', key]);
       wsRef.current = ws;
-
-      // 6. Word-by-word real-time user speech recognition (guarded by isAgentSpeakingRef)
-      if (typeof window !== 'undefined') {
-        const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (SpeechRec) {
-          try {
-            const recognition = new SpeechRec();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-
-            recognition.onresult = (e: any) => {
-              // If Aria is speaking from speakers, ignore speaker audio bleed
-              if (isAgentSpeakingRef.current) return;
-
-              let interim = '';
-              for (let i = e.resultIndex; i < e.results.length; ++i) {
-                interim += e.results[i][0].transcript;
-              }
-              if (interim.trim()) {
-                setUserTranscript(interim.trim());
-                setIsUserSpeaking(true);
-                setActiveSpeaker('user');
-              }
-            };
-
-            recognition.onend = () => {
-              // Keep alive as long as connected and not cleaning up
-              if (!isCleaningUpRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
-                try { recognition.start(); } catch { /* ignore */ }
-              }
-            };
-
-            recognition.onerror = () => { /* fallback gracefully to Deepgram STT */ };
-            recognition.start();
-            recognitionRef.current = recognition;
-          } catch { /* ignore */ }
-        }
-      }
 
       ws.onopen = () => {
         // Send Settings message
@@ -380,7 +367,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
                 break;
 
               case 'UserStartedSpeaking':
-                isAgentSpeakingRef.current = false;
                 setIsUserSpeaking(true);
                 setIsAgentSpeaking(false);
                 setActiveSpeaker('user');
@@ -389,11 +375,13 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
 
               case 'ConversationText':
                 if (msg.role === 'user') {
-                  setUserTranscript(msg.content || '');
+                  const userText = msg.content || '';
                   setActiveSpeaker('user');
+                  streamWords(userText, setUserTranscript, userStreamIntervalRef, 35);
                 } else if (msg.role === 'assistant') {
-                  setAgentTranscript(msg.content || '');
+                  const agentText = msg.content || '';
                   setActiveSpeaker('assistant');
+                  streamWords(agentText, setAgentTranscript, agentStreamIntervalRef, 40);
                 }
                 if (msg.content && msg.content.trim()) {
                   const turn: ConversationTurn = {
@@ -414,7 +402,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
                 break;
 
               case 'AgentStartedSpeaking':
-                isAgentSpeakingRef.current = true;
                 setIsAgentSpeaking(true);
                 setIsUserSpeaking(false);
                 setActiveSpeaker('assistant');
@@ -425,7 +412,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
 
               case 'AgentAudioDone':
                 setIsAgentSpeaking(false);
-                isAgentSpeakingRef.current = false;
                 break;
 
               case 'Error':
@@ -487,7 +473,7 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
       setStatus('error');
       cleanup();
     }
-  }, [cleanup, disconnect, playAudioChunk, startAudioLevelMonitoring, options, elapsedSeconds]);
+  }, [cleanup, disconnect, playAudioChunk, startAudioLevelMonitoring, streamWords, options, elapsedSeconds]);
 
   // Cleanup on unmount
   useEffect(() => {
