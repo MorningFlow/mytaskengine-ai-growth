@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import RevealOnScroll from '@/components/ui/RevealOnScroll'
 import GlowCard from '@/components/ui/GlowCard'
@@ -83,15 +84,40 @@ export default function ServicesGrid() {
                   }}
                 >
                   <div style={{ padding: 28, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <h3 style={{
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 600,
-                      fontSize: 18,
-                      color: 'var(--color-ink)',
-                      marginBottom: 10,
-                    }}>
-                      {s.name}
-                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                      <h3 style={{
+                        fontFamily: 'var(--font-display)',
+                        fontWeight: 600,
+                        fontSize: 18,
+                        color: 'var(--color-ink)',
+                        margin: 0,
+                      }}>
+                        {s.name}
+                      </h3>
+                      {s.name === 'DM Setter Engine' && (
+                        <div
+                          title="Official Meta Tech Provider - Direct Instagram Graph API Integration"
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            borderRadius: 6,
+                            padding: '2px 6px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Image
+                            src="/meta-tech-provider.png"
+                            alt="Official Meta Tech Provider"
+                            width={64}
+                            height={24}
+                            style={{ objectFit: 'contain', height: 16, width: 'auto' }}
+                          />
+                        </div>
+                      )}
+                    </div>
                     <p style={{ fontSize: 14, color: 'rgba(13,17,23,0.8)', lineHeight: 1.6, marginBottom: 16 }}>
                       {s.hook}
                     </p>
@@ -101,7 +127,7 @@ export default function ServicesGrid() {
                       gap: 8,
                       fontSize: 12,
                       color: 'var(--color-muted)',
-                      marginBottom: (svc.demoUrl || (svc as any).demoType === 'voice-receptionist') ? 20 : 0,
+                      marginBottom: (svc.demoUrl || (svc as any).demoType === 'voice-receptionist') ? 16 : 0,
                     }}>
                       <span style={{
                         display: 'inline-block',
@@ -115,6 +141,25 @@ export default function ServicesGrid() {
                       }} />
                       {s.for}
                     </p>
+
+                    {s.name === 'DM Setter Engine' && (
+                      <div style={{
+                        fontSize: 11.5,
+                        color: '#0369A1',
+                        background: 'rgba(2, 132, 199, 0.05)',
+                        border: '1px solid rgba(2, 132, 199, 0.16)',
+                        padding: '5px 10px',
+                        borderRadius: 6,
+                        marginBottom: 18,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontWeight: 500,
+                      }}>
+                        <span style={{ color: '#0284C7', fontWeight: 700 }}>✓</span>
+                        <span>Built on official Meta Graph APIs with zero ban risk.</span>
+                      </div>
+                    )}
 
                     {svc.demoUrl && (
                       <OriginButton
