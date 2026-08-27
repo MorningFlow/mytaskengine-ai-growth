@@ -1,12 +1,12 @@
 'use client'
 import { useState } from 'react'
-import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import RevealOnScroll from '@/components/ui/RevealOnScroll'
 import GlowCard from '@/components/ui/GlowCard'
 import { services } from '@/lib/constants'
 import { OriginButton } from '@/components/ui/origin-button'
 import { ArrowRight, ExternalLink, Mic } from 'lucide-react'
+import MetaTechProviderBadge from '@/components/ui/MetaTechProviderBadge'
 
 const VoiceReceptionistDemo = dynamic(
   () => import('@/components/ui/VoiceReceptionistDemo'),
@@ -96,25 +96,14 @@ export default function ServicesGrid() {
                       </h3>
                       {s.name === 'DM Setter Engine' && (
                         <div
-                          title="Official Meta Tech Provider - Direct Instagram Graph API Integration"
+                          title="Official Meta Tech Provider"
                           style={{
-                            background: '#ffffff',
-                            border: '1px solid rgba(0,0,0,0.08)',
-                            borderRadius: 6,
-                            padding: '2px 6px',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
                             flexShrink: 0,
                           }}
                         >
-                          <Image
-                            src="/meta-tech-provider.png"
-                            alt="Official Meta Tech Provider"
-                            width={64}
-                            height={24}
-                            style={{ objectFit: 'contain', height: 16, width: 'auto' }}
-                          />
+                          <MetaTechProviderBadge height={16} />
                         </div>
                       )}
                     </div>

@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
+import MetaTechProviderBadge from '@/components/ui/MetaTechProviderBadge';
 
 const stats = [
   { end: 47, suffix: '+', label: 'Businesses automated' },
@@ -24,44 +24,28 @@ export default function TrustBar() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 20,
+        gap: 18,
       }}>
-        {/* Official Meta Tech Provider Authority Pill */}
+        {/* Clean, Subtle & Prominent Meta Tech Provider Strip */}
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 10,
-          background: 'rgba(0, 0, 0, 0.025)',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
+          gap: 12,
+          background: 'rgba(0, 0, 0, 0.02)',
+          border: '1px solid rgba(0, 0, 0, 0.07)',
           borderRadius: 100,
-          padding: '4px 16px 4px 6px',
-          boxShadow: '0 1px 6px rgba(0, 0, 0, 0.02)',
+          padding: '5px 16px',
         }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: 100,
-            padding: '2px 8px',
-            display: 'flex',
-            alignItems: 'center',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            border: '1px solid rgba(0,0,0,0.06)',
-          }}>
-            <Image
-              src="/meta-tech-provider.png"
-              alt="Official Meta Tech Provider"
-              width={76}
-              height={30}
-              priority
-              style={{ objectFit: 'contain', height: 20, width: 'auto' }}
-            />
-          </div>
+          <MetaTechProviderBadge height={18} />
           <span style={{
             fontSize: 12,
-            fontWeight: 600,
-            color: 'var(--color-ink)',
-            letterSpacing: '-0.01em',
+            fontWeight: 500,
+            color: 'var(--color-muted)',
+            borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
+            paddingLeft: 10,
+            whiteSpace: 'nowrap',
           }}>
-            Official Meta Tech Provider · Verified Graph & Messenger API Architecture
+            Official API Architecture
           </span>
         </div>
 
@@ -101,7 +85,7 @@ export default function TrustBar() {
           .trust-bar-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
         }
       `}</style>
-      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-muted)', marginTop: 14, opacity: 0.6, margin: '14px 0 0' }}>
+      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-muted)', marginTop: 12, opacity: 0.6, margin: '12px 0 0' }}>
         * Internal data as of August 2026. Results vary by business type and engagement scope.
       </p>
     </section>
