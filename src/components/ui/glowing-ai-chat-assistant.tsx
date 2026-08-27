@@ -407,7 +407,8 @@ export const GlowingAiChatAssistant: React.FC = () => {
     setTyping(true);
 
     try {
-      const historyPayload = updatedMessages
+      // Send previous messages as conversation history (excluding the current turn which is passed as 'message')
+      const historyPayload = messages
         .filter(m => m.role === 'user' || m.role === 'bot')
         .map(m => ({ role: m.role, text: m.text }));
 
