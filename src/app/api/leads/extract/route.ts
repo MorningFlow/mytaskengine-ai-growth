@@ -20,10 +20,10 @@ interface TranscriptItem {
 }
 
 const FALLBACK_MODELS = [
+  'openrouter/auto',
   'nvidia/nemotron-3-super-120b-a12b:free',
   'meta-llama/llama-3.3-70b-instruct:free',
   'google/gemini-2.0-flash-exp:free',
-  'mistralai/mistral-small-24b-instruct-2501:free',
 ];
 
 /**

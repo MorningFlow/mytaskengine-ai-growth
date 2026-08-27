@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server';
 
 const ARIA_SYSTEM_PROMPT = `You are Aria, MyTaskEngine's AI Sales & Solutions Assistant on the live website chat.
-MyTaskEngine designs custom AI automation systems (Autonomous Voice Receptionists, 24/7 Social DM Booking Engines, Review Accelerators, and Automated Outbound Pipelines) that eliminate manual bottlenecks.
+MyTaskEngine designs custom AI automation systems (Autonomous 24/7 Voice Receptionists, 24/7 Social DM Booking Engines, Google Review Accelerators, and Automated Outbound Pipelines) that eliminate manual bottlenecks and recover lost revenue.
 
-CORE GUIDELINES:
-1. Persona: Warm, professional, intelligent, concise (1 to 2 short sentences per reply).
-2. Understand typos and casual language naturally (e.g., "instatram" -> Instagram, "dr" -> clinic/doctor).
-3. Conversational Goal:
-   - Understand the visitor's business type and main operational bottleneck.
-   - Present the matching MyTaskEngine AI solution in 1 clear sentence.
-   - Invite them to provide their email to receive a customized AI Implementation Roadmap or schedule a free 30-minute AI Audit.
-4. Keep answers snappy and direct. Never output long paragraphs or markdown bullet lists.`;
+CORE RULES:
+1. Speak DIRECTLY to the user as Aria. NEVER output your inner thoughts, reasoning, meta-notes, scratchpad, or bullet points.
+2. Persona: Warm, professional, intelligent, concise (1 to 2 short sentences per turn).
+3. Understand typos and casual phrasing naturally (e.g., "instatram" -> Instagram).
+4. Conversational Flow:
+   - Answer their specific question directly in 1 sentence.
+   - Ask for their business type or offer their tailored AI Implementation Roadmap.
+5. Example:
+   User: "We are evaluating Missed Call Receptionist. How does it work?"
+   Aria: "Our Autonomous Voice Receptionist answers inbound calls 24/7, qualifies callers, answers FAQs, and books appointments straight to your calendar. What kind of business do you run?"`;
 
-const FALLBACK_MODELS = [
-  'nvidia/nemotron-3-super-120b-a12b:free',
+// Fast chat-instruct models optimized for direct human dialogue with zero reasoning bleed
+const CHAT_MODELS = [
+  'openrouter/auto',
   'meta-llama/llama-3.3-70b-instruct:free',
   'google/gemini-2.0-flash-exp:free',
   'mistralai/mistral-small-24b-instruct-2501:free',
@@ -22,9 +25,6 @@ const FALLBACK_MODELS = [
 async function generateLlmReply(message: string, history: Array<{ role: string; text: string }> = []): Promise<string | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey || !apiKey.trim()) return null;
-
-  const preferredModel = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free';
-  const modelsToTry = [preferredModel, ...FALLBACK_MODELS.filter(m => m !== preferredModel)];
 
   const formattedMessages = [
     { role: 'system', content: ARIA_SYSTEM_PROMPT },
@@ -35,7 +35,7 @@ async function generateLlmReply(message: string, history: Array<{ role: string; 
     { role: 'user', content: message },
   ];
 
-  for (const model of modelsToTry) {
+  for (const model of CHAT_MODELS) {
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -56,9 +56,27 @@ async function generateLlmReply(message: string, history: Array<{ role: string; 
       if (!res.ok) continue;
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content?.trim();
-      if (reply) {
-        return reply;
+      let rawReply = data.choices?.[0]?.message?.content?.trim();
+      if (!rawReply) continue;
+
+      // Clean any thinking blocks or scratchpads
+      let cleaned = rawReply
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/\*Self-check\*[\s\S]*/gi, '')
+        .replace(/\*Thought\*[\s\S]*/gi, '')
+        .trim();
+
+      // If reasoning text leaked at the beginning, extract final spoken turn
+      if (cleaned.startsWith('Okay,') || cleaned.startsWith('The user is') || cleaned.startsWith('I need to')) {
+        const paragraphs = cleaned.split(/\n\s*\n/).map((p: string) => p.trim()).filter(Boolean);
+        const lastPart = paragraphs[paragraphs.length - 1];
+        if (lastPart && !lastPart.startsWith('Okay') && !lastPart.startsWith('The user')) {
+          cleaned = lastPart.replace(/^["']|["']$/g, '').trim();
+        }
+      }
+
+      if (cleaned && cleaned.length > 5) {
+        return cleaned;
       }
     } catch {
       // try next model
@@ -99,7 +117,7 @@ function generateSmartFallback(message: string): string {
     return "Great to meet you! What kind of business do you run, and what manual bottleneck is taking up the most time right now?";
   }
 
-  return "MyTaskEngine builds custom AI automation systems for customer communication, scheduling, and follow-ups. What operational challenge can we help you solve?";
+  return "Our Autonomous Voice Receptionist answers inbound calls 24/7, qualifies callers, answers FAQs, and books appointments straight to your calendar. What kind of business do you run?";
 }
 
 export async function POST(req: Request) {
@@ -112,7 +130,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: "How can I assist your business with AI automation today?" });
     }
 
-    // 1. Primary: Generate intelligent conversational reply via OpenRouter Aria
+    // 1. Primary: Generate clean direct conversational reply via OpenRouter Aria
     const llmReply = await generateLlmReply(userMessage, history);
     if (llmReply) {
       return NextResponse.json({ reply: llmReply });
