@@ -85,7 +85,7 @@ Extract the structured lead JSON with this exact TypeScript structure:
             { role: 'user', content: userPrompt },
           ],
           temperature: 0.1,
-          max_tokens: 800,
+          max_tokens: 2500,
         }),
       });
 
@@ -98,12 +98,11 @@ Extract the structured lead JSON with this exact TypeScript structure:
       const rawContent = data.choices?.[0]?.message?.content;
       if (!rawContent) continue;
 
-      const cleaned = rawContent
-        .replace(/^```(?:json)?\s*/i, '')
-        .replace(/\s*```$/i, '')
-        .trim();
+      // Extract JSON cleanly from markdown blocks or surrounding reasoning
+      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : rawContent;
 
-      const parsed: ExtractedLeadData = JSON.parse(cleaned);
+      const parsed: ExtractedLeadData = JSON.parse(jsonString);
 
       if (parsed && typeof parsed === 'object') {
         const missing: string[] = [];
