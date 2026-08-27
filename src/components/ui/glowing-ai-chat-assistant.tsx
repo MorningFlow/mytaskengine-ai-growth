@@ -489,7 +489,7 @@ const FloatingAiAssistant = () => {
 
   const panel: CSSProperties = {
     position: 'absolute', bottom: 76, right: 0,
-    width: 410,
+    width: 'min(400px, calc(100vw - 32px))',
     background: 'rgba(13, 17, 23, 0.98)',
     border: `1px solid ${C.border}`,
     borderRadius: 20,
@@ -500,11 +500,11 @@ const FloatingAiAssistant = () => {
     display: 'flex', flexDirection: 'column',
     animation: 'mte-pop-in 0.28s cubic-bezier(0.175,0.885,0.32,1.275) forwards',
     boxSizing: 'border-box',
-    maxHeight: '82vh',
+    maxHeight: 'min(600px, calc(100dvh - 100px))',
   };
 
   return (
-    <div className="mte-fab-wrap" style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, boxSizing: 'border-box' }}>
+    <div className="mte-fab-wrap" style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 9999, boxSizing: 'border-box', maxWidth: 'calc(100vw - 24px)' }}>
       {/* ── FAB ── */}
       <button className="mte-fab" style={fab} onClick={() => setOpen(o => !o)} aria-label="Toggle Aria AI Assistant">
         <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)', pointerEvents: 'none' }} />
