@@ -378,13 +378,21 @@ const FloatingAiAssistant = () => {
           setLatestLeadData(json.data);
           setHasExtracted(true);
 
-          // Append showcase message into thread
-          const showcaseMsg: Message = {
-            id: `showcase-${Date.now()}`,
-            role: 'showcase',
-            leadData: json.data,
-          };
-          setMessages(prev => [...prev, showcaseMsg]);
+          // Update existing showcase bubble or append only one
+          setMessages(prev => {
+            const hasExisting = prev.some(m => m.role === 'showcase');
+            if (hasExisting) {
+              return prev.map(m => m.role === 'showcase' ? { ...m, leadData: json.data } : m);
+            }
+            return [
+              ...prev,
+              {
+                id: `showcase-${Date.now()}`,
+                role: 'showcase',
+                leadData: json.data,
+              },
+            ];
+          });
 
           // Submit to Option A central API
           await fetch('/api/leads', {
@@ -416,10 +424,18 @@ const FloatingAiAssistant = () => {
     setTyping(true);
 
     try {
+      const historyPayload = updatedMessages
+        .filter(m => m.role === 'user' || m.role === 'bot')
+        .map(m => ({ role: m.role, text: m.text }));
+
       const res = await fetch('/api/mte-webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sessionId }),
+        body: JSON.stringify({
+          message: text,
+          sessionId,
+          history: historyPayload,
+        }),
       });
 
       let reply = "I received your message and will structure a customized solution.";
@@ -435,9 +451,7 @@ const FloatingAiAssistant = () => {
       // Check if contact information (email / phone) or 3+ turns reached
       const hasEmail = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(text);
       if (hasEmail || nextMessages.filter(m => m.role === 'user').length >= 3) {
-        if (!hasExtracted || hasEmail) {
-          triggerExtraction(nextMessages);
-        }
+        triggerExtraction(nextMessages);
       }
     } catch (err) {
       console.error('[MTE Chat]', err);
