@@ -69,7 +69,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
   const settingsAppliedRef = useRef(false);
-  const recognitionRef = useRef<any>(null);
 
   // Audio level monitoring loop
   const startAudioLevelMonitoring = useCallback(() => {
@@ -143,14 +142,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
     isCleaningUpRef.current = true;
 
     stopAudioLevelMonitoring();
-
-    // Stop browser live speech recognition
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch { /* ignore */ }
-      recognitionRef.current = null;
-    }
 
     // Clear timers
     if (timerRef.current) {
@@ -274,32 +265,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
       // 5. Open WebSocket to Deepgram Voice Agent
       const ws = new WebSocket(`wss://agent.deepgram.com/v1/agent/converse`, ['token', key]);
       wsRef.current = ws;
-
-      // 6. Optional: Initialize live browser speech recognition for instant interim word-by-word streaming
-      if (typeof window !== 'undefined') {
-        const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (SpeechRec) {
-          try {
-            const recognition = new SpeechRec();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-            recognition.onresult = (e: any) => {
-              let interim = '';
-              for (let i = e.resultIndex; i < e.results.length; ++i) {
-                interim += e.results[i][0].transcript;
-              }
-              if (interim.trim()) {
-                setUserTranscript(interim.trim());
-                setActiveSpeaker('user');
-              }
-            };
-            recognition.onerror = () => { /* fallback gracefully to Deepgram STT */ };
-            recognition.start();
-            recognitionRef.current = recognition;
-          } catch { /* ignore */ }
-        }
-      }
 
       ws.onopen = () => {
         // Send Settings message

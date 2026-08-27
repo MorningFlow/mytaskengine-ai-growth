@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, CSSProperties } from 'react';
 import { X, Phone, PhoneOff, Loader2, AlertCircle, RotateCcw, CheckCircle2, ArrowRight, ShieldCheck, Cpu, Calendar, Send } from 'lucide-react';
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb';
 import { useDeepgramAgent, ConversationTurn } from '@/lib/use-deepgram-agent';
-import { MAX_CALL_DURATION_SECONDS } from '@/lib/deepgram-agent-config';
+import { MAX_CALL_DURATION_SECONDS, AGENT_GREETING } from '@/lib/deepgram-agent-config';
 import { ExtractedLeadData } from '@/app/api/leads/extract/route';
 
 /* ─── Scoped keyframes ─────────────────────────────────────────────────────── */
@@ -444,8 +444,8 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                 gap: 8,
                 padding: '0 8px',
               }}>
-                {/* Active User Live Speech Subtitle */}
-                {isConnected && userTranscript && (activeSpeaker === 'user' || isUserSpeaking || !agentTranscript) && (
+                {/* User Live Speech Subtitle */}
+                {isConnected && (activeSpeaker === 'user' || isUserSpeaking) && (
                   <div style={{
                     background: 'rgba(22, 199, 132, 0.08)',
                     border: '1px solid rgba(22, 199, 132, 0.25)',
@@ -469,13 +469,13 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                       </span>
                     </div>
                     <p style={{ fontSize: 13.5, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
-                      "{userTranscript}"
+                      {userTranscript ? `"${userTranscript}"` : 'Listening to your speech…'}
                     </p>
                   </div>
                 )}
 
-                {/* Active Aria Speech Subtitle */}
-                {isConnected && agentTranscript && (activeSpeaker === 'assistant' || isAgentSpeaking || !userTranscript) && (
+                {/* Aria Speech Subtitle */}
+                {isConnected && (activeSpeaker === 'assistant' || isAgentSpeaking || (activeSpeaker === 'idle' && agentTranscript)) && (
                   <div style={{
                     background: 'rgba(255, 255, 255, 0.04)',
                     border: `1px solid ${C.border}`,
@@ -493,7 +493,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
                       </span>
                     </div>
                     <p style={{ fontSize: 13.5, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
-                      "{agentTranscript}"
+                      "{agentTranscript || AGENT_GREETING}"
                     </p>
                   </div>
                 )}
