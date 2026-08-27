@@ -112,8 +112,11 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
     connect,
     disconnect,
     audioLevel,
-    transcript,
+    userTranscript,
     agentTranscript,
+    activeSpeaker,
+    isUserSpeaking,
+    isAgentSpeaking,
     conversationHistory,
     error,
     elapsedSeconds,
@@ -252,7 +255,6 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
   const isConnecting = status === 'connecting';
   const isError = status === 'error';
   const remaining = MAX_CALL_DURATION_SECONDS - elapsedSeconds;
-  const displayTranscript = agentTranscript || transcript;
 
   /* ── Overlay Style ── */
   const overlay: CSSProperties = {
@@ -429,38 +431,91 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
               </div>
             )}
 
-            {/* Live Transcript / Subtitle Box */}
+            {/* Live Real-time Subtitle & Transcription Stream */}
             {!isExtracting && (
               <div style={{
-                minHeight: 48,
+                minHeight: 52,
+                width: '100%',
+                maxWidth: 420,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                textAlign: 'center',
-                padding: '0 12px',
-                maxWidth: 420,
+                gap: 8,
+                padding: '0 8px',
               }}>
-                {isConnected && displayTranscript && (
-                  <p style={{
-                    fontSize: 14,
-                    color: agentTranscript ? C.text : C.muted,
-                    lineHeight: 1.55,
-                    margin: 0,
+                {/* Active User Live Speech Subtitle */}
+                {isConnected && userTranscript && (activeSpeaker === 'user' || isUserSpeaking || !agentTranscript) && (
+                  <div style={{
+                    background: 'rgba(22, 199, 132, 0.08)',
+                    border: '1px solid rgba(22, 199, 132, 0.25)',
+                    borderRadius: 12,
+                    padding: '8px 14px',
+                    width: '100%',
+                    boxSizing: 'border-box',
                     animation: 'vrd-transcript-in 0.2s ease forwards',
+                    textAlign: 'left',
                   }}>
-                    {agentTranscript ? `"${displayTranscript}"` : `You: "${displayTranscript}"`}
-                  </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <span style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: C.accent,
+                        boxShadow: `0 0 6px ${C.accent}`,
+                      }} />
+                      <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.accent }}>
+                        {isUserSpeaking ? 'You (Speaking…)' : 'You'}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 13.5, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
+                      "{userTranscript}"
+                    </p>
+                  </div>
                 )}
 
+                {/* Active Aria Speech Subtitle */}
+                {isConnected && agentTranscript && (activeSpeaker === 'assistant' || isAgentSpeaking || !userTranscript) && (
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 12,
+                    padding: '8px 14px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    animation: 'vrd-transcript-in 0.2s ease forwards',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent }} />
+                      <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.muted }}>
+                        {isAgentSpeaking ? 'Aria (Speaking…)' : 'Aria'}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 13.5, color: '#FFFFFF', lineHeight: 1.45, margin: 0 }}>
+                      "{agentTranscript}"
+                    </p>
+                  </div>
+                )}
+
+                {/* Connecting state */}
                 {isConnecting && (
                   <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
                     Connecting to voice infrastructure…
                   </p>
                 )}
 
+                {/* Idle initial state */}
                 {status === 'idle' && !micConsented && (
                   <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
-                    Experience sub-second human-like voice qualification.
+                    Experience real-time two-way voice qualification.
+                  </p>
+                )}
+
+                {/* Connected initial idle state */}
+                {isConnected && !userTranscript && !agentTranscript && (
+                  <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
+                    Speak into your microphone to talk to Aria…
                   </p>
                 )}
               </div>

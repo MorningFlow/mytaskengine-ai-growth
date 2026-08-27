@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { getDeepgramAgentConfig, MAX_CALL_DURATION_SECONDS } from '@/lib/deepgram-agent-config';
 
 export type AgentStatus = 'idle' | 'connecting' | 'connected' | 'error';
+export type ActiveSpeaker = 'user' | 'assistant' | 'idle';
 
 export interface ConversationTurn {
   role: 'user' | 'assistant';
@@ -23,7 +24,11 @@ interface UseDeepgramAgentReturn {
   disconnect: () => void;
   audioLevel: number;
   transcript: string;
+  userTranscript: string;
   agentTranscript: string;
+  activeSpeaker: ActiveSpeaker;
+  isUserSpeaking: boolean;
+  isAgentSpeaking: boolean;
   conversationHistory: ConversationTurn[];
   error: string | null;
   elapsedSeconds: number;
@@ -35,13 +40,16 @@ interface UseDeepgramAgentReturn {
  * - Opens a WebSocket to Deepgram's agent endpoint
  * - Streams mic audio as raw PCM to Deepgram
  * - Receives and plays back AI-generated audio
- * - Tracks transcripts, audio levels, and call duration
+ * - Tracks real-time transcripts for BOTH user and agent
  */
 export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeepgramAgentReturn {
   const [status, setStatus] = useState<AgentStatus>('idle');
   const [audioLevel, setAudioLevel] = useState(0);
-  const [transcript, setTranscript] = useState('');
+  const [userTranscript, setUserTranscript] = useState('');
   const [agentTranscript, setAgentTranscript] = useState('');
+  const [activeSpeaker, setActiveSpeaker] = useState<ActiveSpeaker>('idle');
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<ConversationTurn[]>([]);
   const conversationHistoryRef = useRef<ConversationTurn[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +69,7 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
   const settingsAppliedRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
 
   // Audio level monitoring loop
   const startAudioLevelMonitoring = useCallback(() => {
@@ -135,6 +144,14 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
 
     stopAudioLevelMonitoring();
 
+    // Stop browser live speech recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch { /* ignore */ }
+      recognitionRef.current = null;
+    }
+
     // Clear timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -191,6 +208,8 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
     analyserDataRef.current = null;
     nextPlayTimeRef.current = 0;
     settingsAppliedRef.current = false;
+    setIsUserSpeaking(false);
+    setIsAgentSpeaking(false);
 
     isCleaningUpRef.current = false;
   }, [stopAudioLevelMonitoring]);
@@ -206,8 +225,11 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
     try {
       setStatus('connecting');
       setError(null);
-      setTranscript('');
+      setUserTranscript('');
       setAgentTranscript('');
+      setActiveSpeaker('idle');
+      setIsUserSpeaking(false);
+      setIsAgentSpeaking(false);
       setElapsedSeconds(0);
 
       // 1. Get API key from our server
@@ -250,9 +272,34 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
       playbackContextRef.current = new AudioContext({ sampleRate: 24000 });
 
       // 5. Open WebSocket to Deepgram Voice Agent
-      // Deepgram uses the 'token' subprotocol for browser WebSocket authentication
       const ws = new WebSocket(`wss://agent.deepgram.com/v1/agent/converse`, ['token', key]);
       wsRef.current = ws;
+
+      // 6. Optional: Initialize live browser speech recognition for instant interim word-by-word streaming
+      if (typeof window !== 'undefined') {
+        const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRec) {
+          try {
+            const recognition = new SpeechRec();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            recognition.onresult = (e: any) => {
+              let interim = '';
+              for (let i = e.resultIndex; i < e.results.length; ++i) {
+                interim += e.results[i][0].transcript;
+              }
+              if (interim.trim()) {
+                setUserTranscript(interim.trim());
+                setActiveSpeaker('user');
+              }
+            };
+            recognition.onerror = () => { /* fallback gracefully to Deepgram STT */ };
+            recognition.start();
+            recognitionRef.current = recognition;
+          } catch { /* ignore */ }
+        }
+      }
 
       ws.onopen = () => {
         // Send Settings message
@@ -260,17 +307,15 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
         ws.send(JSON.stringify(config));
         setStatus('connected');
 
-        // Start audio capture via ScriptProcessor (widely supported fallback)
-        // Use 4096 buffer for a good balance between latency and performance
+        // Start audio capture via ScriptProcessor
         const processor = audioContextRef.current!.createScriptProcessor(4096, 1, 1);
         scriptProcessorRef.current = processor;
 
         processor.onaudioprocess = (e) => {
           if (ws.readyState !== WebSocket.OPEN) return;
-          if (!settingsAppliedRef.current) return; // Wait for SettingsApplied before sending audio
+          if (!settingsAppliedRef.current) return;
 
           const inputData = e.inputBuffer.getChannelData(0);
-          // Convert Float32 to Int16 (linear16)
           const int16Array = new Int16Array(inputData.length);
           for (let i = 0; i < inputData.length; i++) {
             const s = Math.max(-1, Math.min(1, inputData[i]));
@@ -313,13 +358,18 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
                 break;
 
               case 'UserStartedSpeaking':
+                setIsUserSpeaking(true);
+                setIsAgentSpeaking(false);
+                setActiveSpeaker('user');
                 break;
 
               case 'ConversationText':
                 if (msg.role === 'user') {
-                  setTranscript(msg.content || '');
+                  setUserTranscript(msg.content || '');
+                  setActiveSpeaker('user');
                 } else if (msg.role === 'assistant') {
                   setAgentTranscript(msg.content || '');
+                  setActiveSpeaker('assistant');
                 }
                 if (msg.content && msg.content.trim()) {
                   const turn: ConversationTurn = {
@@ -336,16 +386,20 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
                 break;
 
               case 'AgentThinking':
+                setIsUserSpeaking(false);
                 break;
 
               case 'AgentStartedSpeaking':
-                // Reset play timeline to avoid old scheduled audio playing during an interruption
+                setIsAgentSpeaking(true);
+                setIsUserSpeaking(false);
+                setActiveSpeaker('assistant');
                 if (playbackContextRef.current) {
                   nextPlayTimeRef.current = playbackContextRef.current.currentTime;
                 }
                 break;
 
               case 'AgentAudioDone':
+                setIsAgentSpeaking(false);
                 break;
 
               case 'Error':
@@ -354,7 +408,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
                 break;
 
               default:
-                // Log unknown message types in dev
                 if (process.env.NODE_ENV === 'development') {
                   console.log('Deepgram msg:', msg.type, msg);
                 }
@@ -367,13 +420,9 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
 
       ws.onerror = (e) => {
         console.error('WebSocket error event:', e);
-        // The actual cause will appear in the onclose handler with the code/reason
       };
 
       ws.onclose = (e) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`WebSocket closed — code: ${e.code}, reason: "${e.reason}", clean: ${e.wasClean}`);
-        }
         if (!isCleaningUpRef.current) {
           let msg = 'Connection closed. Please try again.';
           if (e.code === 1006) {
@@ -399,7 +448,6 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
     } catch (err: any) {
       console.error('Connection error:', err);
 
-      // Provide user-friendly error messages
       let errorMessage = 'Failed to connect. Please try again.';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
@@ -427,8 +475,12 @@ export function useDeepgramAgent(options: UseDeepgramAgentOptions = {}): UseDeep
     connect,
     disconnect,
     audioLevel,
-    transcript,
+    transcript: userTranscript || agentTranscript,
+    userTranscript,
     agentTranscript,
+    activeSpeaker,
+    isUserSpeaking,
+    isAgentSpeaking,
     conversationHistory,
     error,
     elapsedSeconds,
