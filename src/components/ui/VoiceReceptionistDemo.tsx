@@ -599,7 +599,7 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
 
                 {isConnected && (
                   <span style={{ fontSize: 11.5, color: getRemainingColor(elapsedSeconds), fontWeight: 500 }}>
-                    {remaining}s remaining in demo
+                    {formatTime(remaining)} remaining in demo
                   </span>
                 )}
               </div>
