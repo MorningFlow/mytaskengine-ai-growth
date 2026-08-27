@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, CSSProperties } from 'react';
-import { Send, Bot, X, AlertCircle, Sparkles, CheckCircle2, ArrowRight, Calendar, Cpu } from 'lucide-react';
+import { Send, Bot, X, AlertCircle, Sparkles, CheckCircle2, ArrowRight, Calendar, Cpu, ArrowLeft } from 'lucide-react';
 import { ExtractedLeadData } from '@/app/api/leads/extract/route';
 
 /* ─── Scoped keyframes (namespaced with mte- prefix) ─────────────────────── */
@@ -16,8 +16,8 @@ const STYLES = `
     100% { transform: scale(2.0); opacity: 0;    }
   }
   @keyframes mte-pulse-dot {
-    0%, 100% { opacity: 1;   }
-    50%       { opacity: 0.35; }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.35; transform: scale(0.85); }
   }
   @keyframes mte-typing {
     0%, 80%, 100% { transform: translateY(0);   opacity: 0.4; }
@@ -43,90 +43,74 @@ const STYLES = `
   }
   .mte-send { transition: transform 0.18s ease, filter 0.18s ease; }
   .mte-close-btn:hover { background: rgba(255,255,255,0.08) !important; }
+  .mte-intel-pill:hover { filter: brightness(1.15); transform: translateY(-1px); }
   .mte-textarea:focus { outline: none; }
   .mte-scroll::-webkit-scrollbar { width: 4px; }
   .mte-scroll::-webkit-scrollbar-track { background: transparent; }
   .mte-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
   .mte-chip:hover {
-    background: rgba(22, 199, 132, 0.15) !important;
+    background: rgba(22, 199, 132, 0.12) !important;
     border-color: rgba(22, 199, 132, 0.4) !important;
-    color: #FFFFFF !important;
+    color: #16C784 !important;
     transform: translateY(-1px);
   }
   .mte-cal-btn:hover {
     filter: brightness(1.12);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(22, 199, 132, 0.35) !important;
+    transform: translateY(-1px);
   }
 `;
 
-function getOrCreateSessionId(): string {
-  const KEY = 'mte_chat_session';
-  try {
-    const existing = sessionStorage.getItem(KEY);
-    if (existing) return existing;
-    const id = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-    sessionStorage.setItem(KEY, id);
-    return id;
-  } catch {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-  }
-}
+/* ─── Design Tokens (aligned with luxury dark theme) ─────────────────────── */
+const C = {
+  accent: '#16C784',
+  accentDk: '#0E9F6E',
+  accentBg: 'rgba(22, 199, 132, 0.08)',
+  accentBorder: 'rgba(22, 199, 132, 0.25)',
+  bg: '#0A0D12',
+  surface: '#0F141C',
+  border: 'rgba(255, 255, 255, 0.08)',
+  divider: 'rgba(255, 255, 255, 0.06)',
+  text: '#F3F4F6',
+  muted: '#9CA3AF',
+  subtle: '#6B7280',
+  ink: '#030712',
+};
 
-type Role = 'bot' | 'user' | 'showcase';
+const INITIAL_MSG =
+  "Hello. I am Aria, MyTaskEngine's AI Sales & Solutions Assistant. Which operational bottleneck can we help you solve today?";
+
+const ERROR_MSG =
+  "I encountered a temporary connection issue. Please feel free to schedule an audit directly using the button above.";
+
+const QUICK_CHIPS = [
+  'Missed Call Receptionist',
+  'Social DM Booking Engine',
+  'Google Review Accelerator',
+  'Automated Outbound Pipeline',
+];
 
 interface Message {
   id: string;
-  role: Role;
-  text?: string;
-  leadData?: ExtractedLeadData;
+  role: 'user' | 'bot';
+  text: string;
 }
 
-const WELCOME: Message = {
-  id: 'welcome',
-  role: 'bot',
-  text: "Hello. I am Aria, MyTaskEngine's AI Sales & Solutions Assistant. Which operational bottleneck can we help you solve today?",
-};
-
-const ERROR_MSG = "Something went wrong on our end. Please try again or reach us at taskengin3@gmail.com.";
-
-const QUICK_CHIPS = [
-  "Missed Call Receptionist",
-  "Instagram DM Booking",
-  "Google Review Booster",
-  "Custom AI Outbound",
-];
-
-const C = {
-  bg: '#0D1117',
-  border: 'rgba(255,255,255,0.08)',
-  divider: 'rgba(255,255,255,0.06)',
-  text: '#FFFFFF',
-  muted: '#9CA3AF',
-  subtle: '#6B7280',
-  accent: '#16C784',
-  accentDk: '#13B371',
-  accentBg: 'rgba(22, 199, 132, 0.08)',
-  accentBorder: 'rgba(22, 199, 132, 0.25)',
-  ink: '#0D1117',
-} as const;
-
-function useInjectStyles() {
-  useEffect(() => {
-    if (document.getElementById('mte-chat-styles')) return;
-    const tag = document.createElement('style');
-    tag.id = 'mte-chat-styles';
-    tag.textContent = STYLES;
-    document.head.appendChild(tag);
-  }, []);
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') return 'ssr-session';
+  const key = 'mte_chat_session_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = `sess-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
 }
 
 const TypingDots = () => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 0' }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 0' }}>
     {[0, 1, 2].map(i => (
-      <div key={i} style={{
+      <span key={i} style={{
+        display: 'inline-block',
         width: 7, height: 7, borderRadius: '50%',
         background: C.muted,
         animation: `mte-typing 1.2s ease-in-out ${i * 0.18}s infinite`,
@@ -136,9 +120,17 @@ const TypingDots = () => (
 );
 
 /**
- * Inline AI Data Extraction Showcase (The Capabilities Flex)
+ * On-Demand Structured AI Intelligence Drawer View
  */
-const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData; onEmailSubmit?: (email: string) => void }) => {
+const IntelligenceDrawerView = ({
+  data,
+  onClose,
+  onEmailSubmit,
+}: {
+  data: ExtractedLeadData;
+  onClose: () => void;
+  onEmailSubmit?: (email: string) => void;
+}) => {
   const [emailInput, setEmailInput] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -150,34 +142,38 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
   };
 
   return (
-    <div style={{
-      margin: '12px 0',
-      background: 'rgba(255, 255, 255, 0.03)',
-      border: `1px solid ${C.accentBorder}`,
-      borderRadius: 16,
+    <div className="mte-scroll" style={{
+      flex: 1,
+      overflowY: 'auto',
       padding: '16px',
-      boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
-      animation: 'mte-fade-in 0.3s ease forwards',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+      animation: 'mte-fade-in 0.22s ease forwards',
       boxSizing: 'border-box',
-      width: '100%',
     }}>
-      {/* Header Badge */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          fontSize: 10.5,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-          color: C.accent,
-          background: C.accentBg,
-          padding: '3px 8px',
-          borderRadius: 6,
-        }}>
-          <Cpu size={12} /> Real-Time Chat Intelligence
-        </div>
+      {/* Top Bar with Back button and status badge */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button
+          onClick={onClose}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            background: 'rgba(255,255,255,0.06)',
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            padding: '5px 10px',
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: C.text,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <ArrowLeft size={13} />
+          <span>Back to Chat</span>
+        </button>
 
         <span style={{
           fontSize: 10.5,
@@ -185,62 +181,64 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
           color: data.leadScore === 'High Priority' ? C.accent : '#F59E0B',
           background: data.leadScore === 'High Priority' ? C.accentBg : 'rgba(245, 158, 11, 0.08)',
           border: `1px solid ${data.leadScore === 'High Priority' ? C.accentBorder : 'rgba(245, 158, 11, 0.25)'}`,
-          padding: '2px 8px',
+          padding: '3px 8px',
           borderRadius: 6,
         }}>
           {data.leadScore}
         </span>
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>
-        Structured Data Captured Live
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+          Structured Intelligence Captured
+        </div>
+        <p style={{ fontSize: 11.5, color: C.muted, margin: '3px 0 0', lineHeight: 1.45 }}>
+          Aria extracted these parameters directly from your conversation stream without forms.
+        </p>
       </div>
-      <p style={{ fontSize: 11.5, color: C.muted, margin: '0 0 12px', lineHeight: 1.45 }}>
-        Aria extracted these parameters directly from your conversation stream without forms.
-      </p>
 
-      {/* Grid of Attributes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}` }}>
+      {/* Grid: Contact & Industry */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 12px', borderRadius: 10, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Contact</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {data.name || 'Inbound Prospect'}
           </div>
-          <div style={{ fontSize: 11, color: data.email ? C.accent : C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 11.5, color: data.email ? C.accent : C.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {data.email || 'Pending email'}
           </div>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}` }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 12px', borderRadius: 10, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Industry</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: data.businessType ? C.text : C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: data.businessType ? C.text : C.muted, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {data.businessType || 'General Inbound'}
           </div>
-          <div style={{ fontSize: 11, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 11.5, color: C.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {data.volumeOrScale || 'Scale not stated'}
           </div>
         </div>
       </div>
 
       {/* Bottleneck */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 10 }}>
+      <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 12px', borderRadius: 10, border: `1px solid ${C.border}` }}>
         <div style={{ fontSize: 10, color: C.subtle, textTransform: 'uppercase', fontWeight: 600 }}>Identified Bottleneck</div>
-        <div style={{ fontSize: 12, color: data.primaryBottleneck ? '#E5E7EB' : C.muted, lineHeight: 1.4, marginTop: 2 }}>
+        <div style={{ fontSize: 12.5, color: data.primaryBottleneck ? '#E5E7EB' : C.muted, lineHeight: 1.45, marginTop: 3 }}>
           {data.primaryBottleneck || 'No operational bottlenecks specified in chat.'}
         </div>
       </div>
 
       {/* Recommended Solution */}
-      <div style={{ background: C.accentBg, border: `1px solid ${C.accentBorder}`, padding: '8px 10px', borderRadius: 8, marginBottom: 12 }}>
+      <div style={{ background: C.accentBg, border: `1px solid ${C.accentBorder}`, padding: '10px 12px', borderRadius: 10 }}>
         <div style={{ fontSize: 10, color: C.accent, textTransform: 'uppercase', fontWeight: 600 }}>Recommended Architecture</div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginTop: 2 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginTop: 3 }}>
           {data.recommendedSolution}
         </div>
       </div>
 
-      {/* Email Input Form if missing */}
+      {/* Missing Email Recovery Form */}
       {!data.email && !submitted && (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 6, marginTop: 2 }}>
           <input
             type="email"
             required
@@ -252,7 +250,7 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
               background: 'rgba(255,255,255,0.05)',
               border: `1px solid ${C.border}`,
               borderRadius: 8,
-              padding: '6px 10px',
+              padding: '8px 10px',
               fontSize: 12,
               color: C.text,
               outline: 'none',
@@ -266,8 +264,8 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
               color: C.ink,
               border: 'none',
               borderRadius: 8,
-              padding: '6px 12px',
-              fontSize: 11.5,
+              padding: '8px 14px',
+              fontSize: 12,
               fontWeight: 600,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
@@ -279,9 +277,9 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
       )}
 
       {submitted && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: C.accent, marginBottom: 10 }}>
-          <CheckCircle2 size={13} />
-          Roadmap scheduled for delivery to {emailInput}.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.accent }}>
+          <CheckCircle2 size={14} />
+          Roadmap queued for delivery to {emailInput}.
         </div>
       )}
 
@@ -296,36 +294,37 @@ const InlineShowcaseBubble = ({ data, onEmailSubmit }: { data: ExtractedLeadData
           background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
           color: C.ink,
           border: 'none',
-          padding: '9px 16px',
+          padding: '10px 16px',
           borderRadius: 8,
           fontSize: 12.5,
-          fontWeight: 600,
+          fontWeight: 700,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 6,
-          boxShadow: `0 4px 14px rgba(22, 199, 132, 0.25)`,
-          transition: 'all 0.2s ease',
+          boxShadow: `0 4px 16px rgba(22, 199, 132, 0.3)`,
+          marginTop: 'auto',
         }}
       >
         <Calendar size={14} />
         Schedule Free 30-Min AI Audit
-        <ArrowRight size={13} />
       </button>
     </div>
   );
 };
 
-const FloatingAiAssistant = () => {
-  useInjectStyles();
-
+export const GlowingAiChatAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([WELCOME]);
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 'init', role: 'bot', text: INITIAL_MSG },
+  ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [hasExtracted, setHasExtracted] = useState(false);
   const [latestLeadData, setLatestLeadData] = useState<ExtractedLeadData | null>(null);
+  const [showIntelDrawer, setShowIntelDrawer] = useState(false);
+
   const [sessionId] = useState<string>(() => {
     if (typeof window === 'undefined') return 'ssr-placeholder';
     return getOrCreateSessionId();
@@ -337,14 +336,14 @@ const FloatingAiAssistant = () => {
 
   /* Auto-scroll to bottom */
   useEffect(() => {
-    if (scrollRef.current)
+    if (scrollRef.current && !showIntelDrawer)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, typing]);
+  }, [messages, typing, showIntelDrawer]);
 
   /* Focus textarea when open */
   useEffect(() => {
-    if (open) setTimeout(() => textareaRef.current?.focus(), 60);
-  }, [open]);
+    if (open && !showIntelDrawer) setTimeout(() => textareaRef.current?.focus(), 60);
+  }, [open, showIntelDrawer]);
 
   /* Close on outside click */
   useEffect(() => {
@@ -357,7 +356,7 @@ const FloatingAiAssistant = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Trigger lead extraction and render inline showcase
+  // Trigger lead extraction and update header state
   const triggerExtraction = useCallback(async (allMessages: Message[]) => {
     const transcriptForApi = allMessages
       .filter(m => m.role === 'user' || m.role === 'bot')
@@ -378,23 +377,7 @@ const FloatingAiAssistant = () => {
           setLatestLeadData(json.data);
           setHasExtracted(true);
 
-          // Update existing showcase bubble or append only one
-          setMessages(prev => {
-            const hasExisting = prev.some(m => m.role === 'showcase');
-            if (hasExisting) {
-              return prev.map(m => m.role === 'showcase' ? { ...m, leadData: json.data } : m);
-            }
-            return [
-              ...prev,
-              {
-                id: `showcase-${Date.now()}`,
-                role: 'showcase',
-                leadData: json.data,
-              },
-            ];
-          });
-
-          // Submit to Option A central API
+          // Submit to central lead storage
           await fetch('/api/leads', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -448,9 +431,9 @@ const FloatingAiAssistant = () => {
       const nextMessages = [...updatedMessages, botMsg];
       setMessages(nextMessages);
 
-      // Check if contact information (email / phone) or 3+ turns reached
+      // Check if contact information (email / phone) or 2+ turns reached
       const hasEmail = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(text);
-      if (hasEmail || nextMessages.filter(m => m.role === 'user').length >= 3) {
+      if (hasEmail || nextMessages.filter(m => m.role === 'user').length >= 2) {
         triggerExtraction(nextMessages);
       }
     } catch (err) {
@@ -459,7 +442,7 @@ const FloatingAiAssistant = () => {
     } finally {
       setTyping(false);
     }
-  }, [input, typing, sessionId, messages, hasExtracted, triggerExtraction]);
+  }, [input, typing, sessionId, messages, triggerExtraction]);
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
@@ -485,26 +468,32 @@ const FloatingAiAssistant = () => {
         }),
       });
     } catch (err) {
-      console.warn('Lead update error:', err);
+      console.warn('Manual email save error:', err);
     }
   };
 
   /* ── Styles ── */
   const fab: CSSProperties = {
-    width: 60, height: 60, borderRadius: '50%',
-    border: '1.5px solid rgba(255,255,255,0.18)',
-    background: `linear-gradient(135deg, ${C.accent} 0%, ${C.accentDk} 100%)`,
-    boxShadow: `0 0 22px rgba(22, 199, 132, 0.5), 0 0 44px rgba(22, 199, 132, 0.35)`,
-    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    position: 'relative', outline: 'none',
-    transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-    boxSizing: 'border-box', padding: 0,
+    position: 'relative',
+    width: 58,
+    height: 58,
+    borderRadius: '50%',
+    background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+    border: 'none',
+    boxShadow: `0 0 20px rgba(22, 199, 132, 0.45), 0 8px 30px rgba(0,0,0,0.6)`,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
   };
 
   const panel: CSSProperties = {
-    position: 'absolute', bottom: 76, right: 0,
+    position: 'absolute',
+    bottom: 74,
+    right: 0,
     width: 'min(400px, calc(100vw - 32px))',
-    background: 'rgba(13, 17, 23, 0.98)',
+    background: 'rgba(10, 13, 18, 0.94)',
     border: `1px solid ${C.border}`,
     borderRadius: 20,
     boxShadow: '0 28px 72px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.03)',
@@ -559,46 +548,151 @@ const FloatingAiAssistant = () => {
               </div>
             </div>
 
-            <button
-              className="mte-close-btn"
-              onClick={() => setOpen(false)}
-              style={{
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                color: C.muted, display: 'flex', padding: 6, borderRadius: 8,
-                transition: 'background 0.15s',
-              }}
-              aria-label="Close chat"
-            >
-              <X size={16} />
-            </button>
+            {/* Header Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {latestLeadData && (
+                <button
+                  className="mte-intel-pill"
+                  onClick={() => setShowIntelDrawer(prev => !prev)}
+                  title={showIntelDrawer ? "Return to chat conversation" : "View real-time structured intelligence"}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    background: showIntelDrawer
+                      ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
+                      : 'rgba(22, 199, 132, 0.12)',
+                    border: `1px solid ${showIntelDrawer ? C.accent : 'rgba(22, 199, 132, 0.3)'}`,
+                    borderRadius: 14,
+                    padding: '4px 9px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: showIntelDrawer ? C.ink : C.accent,
+                    cursor: 'pointer',
+                    transition: 'all 0.18s ease',
+                  }}
+                >
+                  <Cpu size={12} />
+                  <span>{showIntelDrawer ? "Chat" : "AI Data"}</span>
+                  {!showIntelDrawer && (
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.accent, animation: 'mte-pulse-dot 1.5s infinite' }} />
+                  )}
+                </button>
+              )}
+
+              <button
+                className="mte-close-btn"
+                onClick={() => setOpen(false)}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: C.muted, display: 'flex', padding: 6, borderRadius: 8,
+                  transition: 'background 0.15s',
+                }}
+                aria-label="Close chat"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
-          {/* Messages Area */}
-          <div
-            ref={scrollRef}
-            className="mte-scroll"
-            style={{
-              flex: 1, overflowY: 'auto',
-              padding: '16px 16px 8px',
-              display: 'flex', flexDirection: 'column',
-              minHeight: 220,
-              boxSizing: 'border-box',
-            }}
-          >
-            {messages.map(m => {
-              if (m.role === 'showcase' && m.leadData) {
-                return <InlineShowcaseBubble key={m.id} data={m.leadData} onEmailSubmit={handleManualEmailUpdate} />;
-              }
+          {/* Conditional View: Structured Intelligence Drawer OR Clean Chat Message Stream */}
+          {showIntelDrawer && latestLeadData ? (
+            <IntelligenceDrawerView
+              data={latestLeadData}
+              onClose={() => setShowIntelDrawer(false)}
+              onEmailSubmit={handleManualEmailUpdate}
+            />
+          ) : (
+            <>
+              {/* Messages Area */}
+              <div
+                ref={scrollRef}
+                className="mte-scroll"
+                style={{
+                  flex: 1, overflowY: 'auto',
+                  padding: '16px 16px 8px',
+                  display: 'flex', flexDirection: 'column',
+                  minHeight: 220,
+                  boxSizing: 'border-box',
+                }}
+              >
+                {messages.map(m => {
+                  const isUser = m.role === 'user';
+                  return (
+                    <div key={m.id} style={{
+                      display: 'flex',
+                      justifyContent: isUser ? 'flex-end' : 'flex-start',
+                      animation: 'mte-fade-in 0.22s ease forwards',
+                      marginBottom: 10,
+                    }}>
+                      {!isUser && (
+                        <div style={{
+                          width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                          background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          marginRight: 8, marginTop: 2,
+                        }}>
+                          <Bot size={13} color={C.ink} />
+                        </div>
+                      )}
+                      <div style={{
+                        maxWidth: '80%',
+                        padding: '9px 13px',
+                        borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                        background: isUser
+                          ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
+                          : 'rgba(255,255,255,0.06)',
+                        border: isUser ? 'none' : `1px solid ${C.border}`,
+                        color: isUser ? C.ink : C.text,
+                        fontSize: 13,
+                        lineHeight: 1.55,
+                        boxShadow: isUser ? `0 4px 14px rgba(22, 199, 132, 0.25)` : 'none',
+                        wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap',
+                        fontWeight: isUser ? 500 : 400,
+                      }}>
+                        {m.text}
+                      </div>
+                    </div>
+                  );
+                })}
 
-              const isUser = m.role === 'user';
-              return (
-                <div key={m.id} style={{
-                  display: 'flex',
-                  justifyContent: isUser ? 'flex-end' : 'flex-start',
-                  animation: 'mte-fade-in 0.22s ease forwards',
-                  marginBottom: 10,
-                }}>
-                  {!isUser && (
+                {/* Quick Action Chips (shown on turn 1) */}
+                {messages.length === 1 && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    marginTop: 4,
+                    marginBottom: 12,
+                    animation: 'mte-fade-in 0.3s ease forwards',
+                  }}>
+                    {QUICK_CHIPS.map(chip => (
+                      <button
+                        key={chip}
+                        className="mte-chip"
+                        onClick={() => send(`We are evaluating ${chip}. How does it work?`)}
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${C.border}`,
+                          borderRadius: 20,
+                          padding: '6px 12px',
+                          fontSize: 11.5,
+                          fontWeight: 500,
+                          color: C.muted,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Typing Indicator */}
+                {typing && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 10, animation: 'mte-fade-in 0.2s ease forwards' }}>
                     <div style={{
                       width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
                       background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
@@ -607,182 +701,95 @@ const FloatingAiAssistant = () => {
                     }}>
                       <Bot size={13} color={C.ink} />
                     </div>
-                  )}
-                  <div style={{
-                    maxWidth: '80%',
-                    padding: '9px 13px',
-                    borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                    background: isUser
-                      ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
-                      : 'rgba(255,255,255,0.06)',
-                    border: isUser ? 'none' : `1px solid ${C.border}`,
-                    color: isUser ? C.ink : C.text,
-                    fontSize: 13,
-                    lineHeight: 1.55,
-                    boxShadow: isUser ? `0 4px 14px rgba(22, 199, 132, 0.25)` : 'none',
-                    wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap',
-                    fontWeight: isUser ? 500 : 400,
-                  }}>
-                    {m.text}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Quick Action Chips (shown on turn 1) */}
-            {messages.length === 1 && (
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 6,
-                marginTop: 4,
-                marginBottom: 12,
-                animation: 'mte-fade-in 0.3s ease forwards',
-              }}>
-                {QUICK_CHIPS.map(chip => (
-                  <button
-                    key={chip}
-                    className="mte-chip"
-                    onClick={() => send(`We are evaluating ${chip}. How does it work?`)}
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
+                    <div style={{
+                      padding: '9px 13px',
+                      borderRadius: '14px 14px 14px 4px',
+                      background: 'rgba(255,255,255,0.06)',
                       border: `1px solid ${C.border}`,
-                      borderRadius: 20,
-                      padding: '6px 12px',
-                      fontSize: 11.5,
-                      fontWeight: 500,
-                      color: C.muted,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {chip}
-                  </button>
-                ))}
+                    }}>
+                      <TypingDots />
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* View Extracted Matrix Chip (if 2+ turns without showcase yet) */}
-            {messages.filter(m => m.role === 'user').length >= 2 && !hasExtracted && (
-              <div style={{ textAlign: 'center', margin: '6px 0 10px' }}>
-                <button
-                  onClick={() => triggerExtraction(messages)}
+              {/* Input Area */}
+              <div style={{
+                borderTop: `1px solid ${C.divider}`,
+                padding: '10px 14px',
+                display: 'flex', alignItems: 'flex-end', gap: 8,
+                flexShrink: 0,
+              }}>
+                <textarea
+                  ref={textareaRef}
+                  className="mte-textarea"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={onKey}
+                  rows={1}
+                  placeholder="Describe your business or workflow bottleneck…"
                   style={{
-                    background: C.accentBg,
-                    border: `1px solid ${C.accentBorder}`,
-                    color: C.accent,
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    borderRadius: 16,
-                    padding: '6px 14px',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
+                    flex: 1,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 10,
+                    padding: '9px 12px',
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    color: C.text,
+                    fontFamily: 'inherit',
+                    resize: 'none',
+                    outline: 'none',
+                    caretColor: C.accent,
+                    maxHeight: 90,
+                    overflowY: 'auto',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onFocus={e => (e.target.style.borderColor = `rgba(22, 199, 132, 0.45)`)}
+                  onBlur={e  => (e.target.style.borderColor = C.border)}
+                />
+                <button
+                  className="mte-send"
+                  onClick={() => send()}
+                  disabled={!input.trim() || typing}
+                  aria-label="Send message"
+                  style={{
+                    width: 38, height: 38, borderRadius: 10, border: 'none', flexShrink: 0,
+                    background: input.trim() && !typing
+                      ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
+                      : 'rgba(255,255,255,0.07)',
+                    boxShadow: input.trim() && !typing ? `0 4px 14px rgba(22, 199, 132, 0.3)` : 'none',
+                    cursor: input.trim() && !typing ? 'pointer' : 'not-allowed',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: input.trim() && !typing ? C.ink : C.subtle,
                   }}
                 >
-                  <Cpu size={12} />
-                  View Live Extracted Intelligence
+                  <Send size={15} />
                 </button>
               </div>
-            )}
-
-            {/* Typing Indicator */}
-            {typing && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 10, animation: 'mte-fade-in 0.2s ease forwards' }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                  background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginRight: 8, marginTop: 2,
-                }}>
-                  <Bot size={13} color={C.ink} />
-                </div>
-                <div style={{
-                  padding: '9px 13px',
-                  borderRadius: '14px 14px 14px 4px',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${C.border}`,
-                }}>
-                  <TypingDots />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input Area */}
-          <div style={{
-            borderTop: `1px solid ${C.divider}`,
-            padding: '10px 14px',
-            display: 'flex', alignItems: 'flex-end', gap: 8,
-            flexShrink: 0,
-          }}>
-            <textarea
-              ref={textareaRef}
-              className="mte-textarea"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={onKey}
-              rows={1}
-              placeholder="Describe your business or workflow bottleneck…"
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.05)',
-                border: `1px solid ${C.border}`,
-                borderRadius: 10,
-                padding: '9px 12px',
-                fontSize: 13,
-                lineHeight: 1.5,
-                color: C.text,
-                fontFamily: 'inherit',
-                resize: 'none',
-                outline: 'none',
-                caretColor: C.accent,
-                maxHeight: 90,
-                overflowY: 'auto',
-                transition: 'border-color 0.15s',
-              }}
-              onFocus={e => (e.target.style.borderColor = `rgba(22, 199, 132, 0.45)`)}
-              onBlur={e  => (e.target.style.borderColor = C.border)}
-            />
-            <button
-              className="mte-send"
-              onClick={() => send()}
-              disabled={!input.trim() || typing}
-              aria-label="Send message"
-              style={{
-                width: 38, height: 38, borderRadius: 10, border: 'none', flexShrink: 0,
-                background: input.trim() && !typing
-                  ? `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`
-                  : 'rgba(255,255,255,0.07)',
-                boxShadow: input.trim() && !typing ? `0 4px 14px rgba(22, 199, 132, 0.3)` : 'none',
-                cursor: input.trim() && !typing ? 'pointer' : 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: input.trim() && !typing ? C.ink : C.subtle,
-              }}
-            >
-              <Send size={15} />
-            </button>
-          </div>
+            </>
+          )}
 
           {/* Footer Privacy Disclosure */}
           <div style={{
-            padding: '6px 14px 8px',
+            padding: '7px 14px',
+            textAlign: 'center',
             fontSize: 10.5,
             color: C.subtle,
-            textAlign: 'center',
             borderTop: `1px solid ${C.divider}`,
+            flexShrink: 0,
           }}>
             Conversations are structured by AI for qualification.{' '}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: C.accent, textDecoration: 'underline' }}>
-              Privacy Policy
-            </a>
+            <a href="/privacy" style={{ color: C.muted, textDecoration: 'underline' }}>Privacy Policy</a>
           </div>
+
+          {/* Scoped CSS */}
+          <style>{STYLES}</style>
         </div>
       )}
     </div>
   );
 };
 
-export { FloatingAiAssistant };
+export const FloatingAiAssistant = GlowingAiChatAssistant;
+export default GlowingAiChatAssistant;
