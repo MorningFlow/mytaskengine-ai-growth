@@ -101,6 +101,9 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
   const [extractedLead, setExtractedLead] = useState<ExtractedLeadData | null>(null);
   const [manualEmail, setManualEmail] = useState('');
   const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [showSecondaryForm, setShowSecondaryForm] = useState(false);
+  const [secondaryEmail, setSecondaryEmail] = useState('');
+  const [secondarySubmitted, setSecondarySubmitted] = useState(false);
   const [sessionId] = useState(() => `voice_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
 
   const handleCallTimeout = useCallback(() => {
@@ -246,6 +249,29 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
       });
     } catch (err) {
       console.warn('Manual email submission error:', err);
+    }
+  };
+
+  // Submit secondary email copy
+  const handleSecondaryEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!secondaryEmail.trim() || !extractedLead) return;
+
+    setSecondarySubmitted(true);
+
+    try {
+      await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'voice_receptionist_demo',
+          sessionId,
+          lead: { ...extractedLead, email: secondaryEmail.trim() },
+          transcript: conversationHistory,
+        }),
+      });
+    } catch (err) {
+      console.warn('Secondary email submission error:', err);
     }
   };
 
@@ -776,70 +802,146 @@ export default function VoiceReceptionistDemo({ open, onClose }: VoiceReceptioni
               </div>
             </div>
 
-            {/* Missing Email Recovery Form */}
-            {!extractedLead.email && !emailSubmitted && (
+            {/* Delivery Status Card & Email Dispatch */}
+            {(extractedLead.email || emailSubmitted) ? (
+              <div style={{
+                background: 'rgba(22, 199, 132, 0.06)',
+                border: `1px solid ${C.accentBorder}`,
+                borderRadius: 10,
+                padding: '12px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.accent, fontSize: 12.5, fontWeight: 700 }}>
+                  <CheckCircle2 size={15} />
+                  Roadmap Dispatched to Email
+                </div>
+                <div style={{ fontSize: 12, color: C.text, lineHeight: 1.45 }}>
+                  Your custom AI implementation roadmap and workflow specifications have been queued for delivery to:
+                  <div style={{ fontWeight: 600, color: C.accent, marginTop: 2, wordBreak: 'break-all' }}>
+                    {manualEmail || extractedLead.email}
+                  </div>
+                </div>
+
+                {!showSecondaryForm && !secondarySubmitted && (
+                  <button
+                    onClick={() => setShowSecondaryForm(true)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: C.muted,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: '4px 0 0',
+                      textAlign: 'left',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    + Send copy to another email
+                  </button>
+                )}
+
+                {showSecondaryForm && !secondarySubmitted && (
+                  <form onSubmit={handleSecondaryEmailSubmit} style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    <input
+                      type="email"
+                      required
+                      placeholder="Enter secondary email address…"
+                      value={secondaryEmail}
+                      onChange={e => setSecondaryEmail(e.target.value)}
+                      style={{
+                        flex: 1,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 7,
+                        padding: '6px 10px',
+                        fontSize: 11.5,
+                        color: C.text,
+                        outline: 'none',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        background: C.accent,
+                        color: C.ink,
+                        border: 'none',
+                        borderRadius: 7,
+                        padding: '6px 12px',
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Send Copy
+                    </button>
+                  </form>
+                )}
+
+                {secondarySubmitted && (
+                  <div style={{ fontSize: 11, color: C.accent, marginTop: 2 }}>
+                    ✓ Additional copy queued for {secondaryEmail}.
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Missing Email Form */
               <form onSubmit={handleManualEmailSubmit} style={{
                 background: 'rgba(255,255,255,0.02)',
                 border: `1px dashed ${C.border}`,
                 borderRadius: 10,
-                padding: '8px 12px',
+                padding: '10px 12px',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
                 gap: 8,
               }}>
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter email to receive custom AI roadmap…"
-                  value={manualEmail}
-                  onChange={(e) => setManualEmail(e.target.value)}
-                  style={{
-                    flex: 1,
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: 12.5,
-                    color: C.text,
-                    fontFamily: 'inherit',
-                  }}
-                />
-                <button
-                  type="submit"
-                  style={{
-                    background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-                    color: C.ink,
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <Send size={12} />
-                  Send Roadmap
-                </button>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.accent }}>
+                  Receive Your Full Architecture Roadmap
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter email to receive custom AI roadmap…"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(255,255,255,0.06)',
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 7,
+                      padding: '7px 10px',
+                      fontSize: 12,
+                      color: C.text,
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                      color: C.ink,
+                      border: 'none',
+                      borderRadius: 7,
+                      padding: '7px 14px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Send size={12} />
+                    Send Roadmap
+                  </button>
+                </div>
               </form>
-            )}
-
-            {emailSubmitted && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                color: C.accent,
-                background: C.accentBg,
-                padding: '8px 12px',
-                borderRadius: 8,
-              }}>
-                <CheckCircle2 size={14} />
-                Implementation roadmap queued for delivery to {manualEmail}.
-              </div>
             )}
 
             {/* Capability Demonstration Notice */}

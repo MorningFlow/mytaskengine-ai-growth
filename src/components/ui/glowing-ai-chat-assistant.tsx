@@ -120,7 +120,7 @@ const TypingDots = () => (
 );
 
 /**
- * On-Demand Structured AI Intelligence Drawer View
+ * On-Demand Structured AI Implementation Roadmap & Intelligence Drawer View
  */
 const IntelligenceDrawerView = ({
   data,
@@ -132,13 +132,25 @@ const IntelligenceDrawerView = ({
   onEmailSubmit?: (email: string) => void;
 }) => {
   const [emailInput, setEmailInput] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
+  const [showAnotherForm, setShowAnotherForm] = useState(false);
+  const [anotherEmail, setAnotherEmail] = useState('');
+  const [anotherSubmitted, setAnotherSubmitted] = useState(false);
+
+  const activeEmail = submittedEmail || data.email;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim()) return;
     onEmailSubmit?.(emailInput.trim());
-    setSubmitted(true);
+    setSubmittedEmail(emailInput.trim());
+  };
+
+  const handleAnotherSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!anotherEmail.trim()) return;
+    onEmailSubmit?.(anotherEmail.trim());
+    setAnotherSubmitted(true);
   };
 
   return (
@@ -152,7 +164,7 @@ const IntelligenceDrawerView = ({
       animation: 'mte-fade-in 0.22s ease forwards',
       boxSizing: 'border-box',
     }}>
-      {/* Top Bar with Back button and status badge */}
+      {/* Top Navigation Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button
           onClick={onClose}
@@ -188,14 +200,154 @@ const IntelligenceDrawerView = ({
         </span>
       </div>
 
+      {/* Header Title */}
       <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
-          Structured Intelligence Captured
+        <div style={{ fontSize: 14.5, fontWeight: 700, color: C.text }}>
+          Custom AI Implementation Roadmap
         </div>
         <p style={{ fontSize: 11.5, color: C.muted, margin: '3px 0 0', lineHeight: 1.45 }}>
-          Aria extracted these parameters directly from your conversation stream without forms.
+          Tailored architecture specifications generated directly from your conversation with Aria.
         </p>
       </div>
+
+      {/* ── Delivery Status Card ── */}
+      {activeEmail ? (
+        <div style={{
+          background: 'rgba(22, 199, 132, 0.06)',
+          border: `1px solid ${C.accentBorder}`,
+          borderRadius: 12,
+          padding: '12px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.accent, fontSize: 12.5, fontWeight: 700 }}>
+            <CheckCircle2 size={15} />
+            Roadmap Dispatched to Email
+          </div>
+          <div style={{ fontSize: 12, color: C.text, lineHeight: 1.45 }}>
+            Your tailored setup blueprint and workflow specifications have been queued for delivery to:
+            <div style={{ fontWeight: 600, color: C.accent, marginTop: 2, wordBreak: 'break-all' }}>
+              {activeEmail}
+            </div>
+          </div>
+
+          {/* Secondary Email Dispatch */}
+          {!showAnotherForm && !anotherSubmitted && (
+            <button
+              onClick={() => setShowAnotherForm(true)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: C.muted,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '4px 0 0',
+                textAlign: 'left',
+                textDecoration: 'underline',
+              }}
+            >
+              + Send copy to another email
+            </button>
+          )}
+
+          {showAnotherForm && !anotherSubmitted && (
+            <form onSubmit={handleAnotherSubmit} style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+              <input
+                type="email"
+                required
+                placeholder="Enter secondary email…"
+                value={anotherEmail}
+                onChange={e => setAnotherEmail(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 7,
+                  padding: '5px 8px',
+                  fontSize: 11.5,
+                  color: C.text,
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  background: C.accent,
+                  color: C.ink,
+                  border: 'none',
+                  borderRadius: 7,
+                  padding: '5px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Send Copy
+              </button>
+            </form>
+          )}
+
+          {anotherSubmitted && (
+            <div style={{ fontSize: 11, color: C.accent, marginTop: 3 }}>
+              ✓ Additional copy dispatched to {anotherEmail}.
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Missing Email Prompt */
+        <div style={{
+          background: 'rgba(22, 199, 132, 0.06)',
+          border: `1px solid ${C.accentBorder}`,
+          borderRadius: 12,
+          padding: '12px 14px',
+        }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: C.accent, marginBottom: 3 }}>
+            Receive Your Full Architecture Roadmap
+          </div>
+          <p style={{ fontSize: 11.5, color: C.muted, margin: '0 0 8px', lineHeight: 1.4 }}>
+            Enter your email to receive the complete implementation roadmap and workflow diagrams:
+          </p>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 6 }}>
+            <input
+              type="email"
+              required
+              placeholder="Enter your work email…"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,0.06)',
+                border: `1px solid ${C.border}`,
+                borderRadius: 8,
+                padding: '7px 10px',
+                fontSize: 12,
+                color: C.text,
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
+                color: C.ink,
+                border: 'none',
+                borderRadius: 8,
+                padding: '7px 14px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Send Roadmap →
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Grid: Contact & Industry */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -204,8 +356,8 @@ const IntelligenceDrawerView = ({
           <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {data.name || 'Inbound Prospect'}
           </div>
-          <div style={{ fontSize: 11.5, color: data.email ? C.accent : C.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {data.email || 'Pending email'}
+          <div style={{ fontSize: 11.5, color: activeEmail ? C.accent : C.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {activeEmail || 'Pending email'}
           </div>
         </div>
 
@@ -235,53 +387,6 @@ const IntelligenceDrawerView = ({
           {data.recommendedSolution}
         </div>
       </div>
-
-      {/* Missing Email Recovery Form */}
-      {!data.email && !submitted && (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-          <input
-            type="email"
-            required
-            placeholder="Enter email for implementation roadmap…"
-            value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
-            style={{
-              flex: 1,
-              background: 'rgba(255,255,255,0.05)',
-              border: `1px solid ${C.border}`,
-              borderRadius: 8,
-              padding: '8px 10px',
-              fontSize: 12,
-              color: C.text,
-              outline: 'none',
-              fontFamily: 'inherit',
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              background: `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`,
-              color: C.ink,
-              border: 'none',
-              borderRadius: 8,
-              padding: '8px 14px',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Save
-          </button>
-        </form>
-      )}
-
-      {submitted && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.accent }}>
-          <CheckCircle2 size={14} />
-          Roadmap queued for delivery to {emailInput}.
-        </div>
-      )}
 
       {/* 1-Click Cal.com Button */}
       <button
